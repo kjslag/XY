@@ -5,7 +5,7 @@ Run using this link (requires webgl):
 
 <https://cdn.rawgit.com/kjslag/XY/6e5a9db4/XY.html>
 
-The spins in this simulation are soft, which means that the 2-component vectors at each site is not constrained to a unit vector.
+The spins in this simulation are soft, which means that the 2-component vector at each site is not constrained to a unit vector.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
