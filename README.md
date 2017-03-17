@@ -1,6 +1,8 @@
 # XY
 
-Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl! Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
+Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl!
+Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
+The vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons!
 Try it via one of these links (requires webgl):
 
 * 256x256: <https://kjslag.github.io/XY/?Lx=256&Ly=256>
