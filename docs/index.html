@@ -462,8 +462,8 @@ function main()
   
   canvas = document.getElementById("canvas");
   var err = "Your browser does not support ";
-  Lx = urlParam("Lx", urlParam("L", 512));  // must be power of 2
-  Ly = urlParam("Ly", urlParam("L", 512));
+  Lx = urlParam("Lx", urlParam("L", 256));  // must be power of 2
+  Ly = urlParam("Ly", urlParam("L", 256));
   canvas.width  = Lx;
   canvas.height = Ly;
   
