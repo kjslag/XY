@@ -462,8 +462,8 @@ function main()
   
   canvas = document.getElementById("canvas");
   var err = "Your browser does not support ";
-  Lx = urlParam("L", 512);  // must be power of 2
-  Ly = Lx;
+  Lx = urlParam("Lx", urlParam("L", 512));  // must be power of 2
+  Ly = urlParam("Ly", urlParam("L", 512));
   canvas.width  = Lx;
   canvas.height = Ly;
   
@@ -881,5 +881,12 @@ g:<input     type="range" id="g"      min="-3" max="2" step="0.1" value="-1"   o
 F:<input     type="range" id="F"      min="-1" max="2" step="0.1" value="0.3"  onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
 dt:<input    type="range" id="dt"     min="-3" max="0" step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
 steps:<input type="range" id="nsteps" min="0"  max="2" step="0.1" value="0.8"  onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
+
+<br>
+
+other sizes:
+<a href="https://kjslag.github.io/XY/?Lx=256&Ly=256">256x256</a>
+<a href="https://kjslag.github.io/XY/?Lx=512&Ly=512">512x512</a>
+<a href="https://kjslag.github.io/XY/?Lx=1024&Ly=1024">1024x1024</a>
 
 </body></html>
