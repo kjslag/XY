@@ -1,6 +1,6 @@
 # XY
 
-Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl! Hold down the mouse button to apply an external field to create vortices!
+Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl! Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
 Run using this link (requires webgl):
 
 <https://cdn.rawgit.com/kjslag/XY/6e5a9db4/XY.html>
@@ -14,6 +14,6 @@ Lighter colors indicate that the magnitude of the spin vector is less than 1, wh
 * T: temperature of the bath
 * Ɣ: coupling strength to thermal bath at temperature T
 * g: energy cost for a spin to not be a unit vector
-* F: strength of external field when mouse clicking on the system
+* F: strength of vortex attractive force when mouse clicking on the system
 * dt: time step
 * steps: number of time steps before updating the image
