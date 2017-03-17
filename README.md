@@ -17,4 +17,4 @@ Lighter colors indicate that the magnitude of the spin vector is less than 1, wh
 * g: energy cost for a spin to not be a unit vector
 * F: strength of vortex attractive force when mouse clicking on the system
 * dt: time step (increase to increase simulation speed at the expense of accuracy)
-* steps: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation if fps is already maxed out at 60fps)
+* steps: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation speed if fps is already maxed out at 60fps)
