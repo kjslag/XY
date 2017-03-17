@@ -3,7 +3,7 @@
 Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl! Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
 Run using this link (requires webgl):
 
-<https://cdn.rawgit.com/kjslag/XY/6e5a9db4/XY.html>
+<https://cdn.rawgit.com/kjslag/XY/dc413934/XY.html>
 
 The spins in this simulation are soft, which means that the 2-component vector at each site is not constrained to a unit vector.
 Each pixel on the computer represents a spin.
