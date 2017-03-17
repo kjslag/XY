@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+
+<!--
+MIT License: Copyright 2017 Kevin Slagle
+
+Many thanks to Evgeny Demidov for example code:
+http://www.ibiblio.org/e-notes/
+and Giles Thomas for a webgl tutorial:
+http://learningwebgl.com/blog/?page_id=1217
+http://webglplayground.net/gallery
+
+http://webglstats.com/
+http://caniuse.com/webgl
+http://www.khronos.org/webgl/wiki/Getting_a_WebGL_Implementation
+http://stackoverflow.com/questions/3881197/opengl-es-2-0-extensions-on-android-devices
+
+http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html
+-->
+
+<meta charset="utf-8">
+
+<html><head>
+<title>XY</title>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec2 aVertexPos;
+attribute vec2 aCoord;
+varying   vec2 vCoord;
+
+void main()
+{
+  gl_Position = vec4(aVertexPos, 0., 1.);
+  vCoord      = aCoord;
+}
+</script>
+
+<!-- http://en.wikipedia.org/wiki/Linear_congruential_generator -->
+<script id="randX-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uMult;
+uniform sampler2D uRandX;
+varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
+
+uniform vec2 B;
+
+void main()
+{
+  vec4 X = vec4(B,B) * texture2D(uRandX, vCoord);
+  gl_FragColor = vec4(texture2D(uMult, X.xy).ra,
+                      texture2D(uMult, X.zw).ra);
+  // .ra since pixel format is LUMINANCE_ALPHA
+}
+</script>
+
+<!-- http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html -->
+<script id="rand-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uRandX;
+uniform sampler2D uRand;
+varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
+
+uniform vec2  uOffset;
+uniform vec2  uOffset1;
+uniform vec2  uOffset2;
+uniform float Lx;
+uniform float Ly;
+uniform vec2  B;
+
+void main()
+{
+  float   dx = 1./Lx;
+  vec2    dX = vec2(dx, 1./Ly);
+  
+  vec2     X = vCoord;
+  vec2    bX = floor((X-.5*dX) * B) / B;
+  bool evenQ = mod(X.x*Lx, 2.) < 1.;
+  vec2    X0 = X;
+  if (!evenQ)
+    X0   = uOffset + bX+texture2D(uRandX, X).zw;
+  vec2 bX0 = floor((X0-.5*dX) * B) / B;
+  vec4 r1  = texture2D( uRand, uOffset1 + bX0+texture2D(uRandX, X0              ).xy );
+  vec4 r2  = texture2D( uRand, uOffset2 + bX0+texture2D(uRandX, X0 + vec2(dx,0.)).xy );
+  r1 = r1.wxzy * vec4(-1., 1.,-1.,-1.);
+  r2 = r2.zwyx * vec4( 1.,-1.,-1., 1.);
+  gl_FragColor = (evenQ ? r1+r2 : r1-r2)/sqrt(2.);
+}
+</script>
+
+<script id="fast-rand-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uRand;
+varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
+
+uniform vec2  uOffset;
+uniform vec2  uOffset1;
+uniform vec2  uOffset2;
+uniform float Lx;
+
+void main()
+{
+  vec2     X = vCoord;
+  bool evenQ = mod(X.x*Lx, 2.) < 1.;
+  vec2    X0 = X;
+  if (!evenQ)
+    X0 += uOffset;
+  vec4 r1 = texture2D(uRand, uOffset1 + X0).wxzy * vec4(-1., 1.,-1.,-1.);
+  vec4 r2 = texture2D(uRand, uOffset2 + X0).zwyx * vec4( 1.,-1.,-1., 1.);
+  gl_FragColor = (evenQ ? r1+r2 : r1-r2)/sqrt(2.);
+}
+</script>
+
+<script id="comp-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uRand;
+uniform sampler2D uPsi;
+varying vec2 vCoord;
+
+uniform vec2 DX;
+
+// TODO
+uniform float a;
+uniform float T;
+uniform float gamma;
+uniform float g;
+uniform float dt;
+uniform float F;
+
+uniform bool mouseIsDown;
+uniform vec2 mousePos;
+
+//const float pi = 3.14159265358979324;
+
+float sq(float x) { return x*x; }
+
+//vec2 distMod(vec2 dist) { return mod(dist + .5, 1.) - .5; }
+
+vec2 cross2(vec2 a) { return vec2(-a.y,a.x); }
+float det2(vec2 a, vec2 b) { return a.x*b.y - a.y*b.x; }
+
+void main()
+{ // see /home/k/Documents/Cenke/XY sim.nb for formulas
+  float _gamma = gamma*a;
+  float _g     = g    *a*a;
+  
+  vec2  X = vCoord;
+  vec2 dX = vec2(DX.x,0.), dY=vec2(0.,DX.y);
+  
+  vec2 psi    = texture2D(uPsi,     X       ).xy;
+  vec2 psi1   = texture2D(uPsi, mod(X+dX,1.)).xy;
+  vec2 psi2   = texture2D(uPsi, mod(X-dX,1.)).xy;
+  vec2 psi3   = texture2D(uPsi, mod(X+dY,1.)).xy;
+  vec2 psi4   = texture2D(uPsi, mod(X-dY,1.)).xy;
+  vec2 psiOld = texture2D(uPsi,     X       ).zw;
+  
+  vec2 F0   = _g*(1.-dot(psi,psi))*psi + (psi1 + psi2 + psi3 + psi4 - 4.*psi);
+  if ( mouseIsDown ) {
+    float R2    = sq(200.);
+    vec2  dist  = mod(X/DX - mousePos + .5/DX, 1./DX) - .5/DX;
+    float dist2 = dot(dist, dist);
+    if ( dist2 < R2 ) { // TODO use sin distance
+      float r2     = dist2/R2;
+      float r      = sqrt(r2);
+      vec2 dir     = normalize(dist);
+      vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
+      vec2 dPsi    = vec2( det2(dir, psi1234.xz),
+                           det2(dir, psi1234.yw) )*r;
+      F0+= -F*sq(1.-r) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
+      //F0+= normalize(dist) * sq(1. - sq(dist2/R2));
+    }
+  }
+  vec2 rand = texture2D(uRand, X).xy;
+  vec2 xi   = sqrt(2.*_gamma*T/dt) * rand;
+  vec2 psiNew = (2.*psi - (1.-.5*_gamma*dt)*psiOld + (F0+xi)*(dt*dt)) / (1.+.5*_gamma*dt);
+  
+  gl_FragColor = vec4(psiNew, psi);
+}
+</script>
+
+<script id="show-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uPsi;
+uniform sampler2D uColorTex;
+varying vec2 vCoord;
+
+void main()
+{
+  vec2  psi    = texture2D(uPsi, vCoord).xy;
+  float psi0   = sqrt(dot(psi,psi));
+  float theta  = atan(psi.y, psi.x) / radians(360.);
+  vec2  color  = vec2(.5/7.,.5/3.) + vec2(6./7.,2./3.)*vec2( theta+.5, 1./(1.+psi0) );
+  gl_FragColor = texture2D(uColorTex, color); // use texture to calculate color
+}
+</script>
+
+<script id="read-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uTex;
+varying vec2 vCoord;
+
+const float M = 8.;
+
+void main()
+{
+  vec2 A = texture2D(uTex, vCoord).xy;
+  //vec2 A = (texture2D(uTex, vCoord).xy + texture2D(uTex, vCoord).zw)/2.;
+  A = clamp((64./M) * log(abs(A)) + 64., 0., 127.) + (sign(sign(A)+.5)+1.)*64.;
+  vec2 a = floor(A);
+  vec2 b = A - a;
+  a = (a+.5)/256.;
+  gl_FragColor = vec4(a.x, b.x, a.y, b.y);
+}
+</script>
+
+<script type="text/javascript">
+"use strict";
+
+function getLoc(prog, name)
+{ return gl.getUniformLocation(prog, name); }
+
+function getValue(id)
+{ return document.getElementById(id).value; }
+
+function setValue(id, value)
+{ document.getElementById(id).value = value; }
+
+var T_value;
+function setParam(param)
+{
+  var min = document.getElementById(param).min;
+  gl.useProgram(progs.comp);
+  var x = getValue(param);
+  if ( x === min )
+    x = 0;
+  else {
+    var min10 = Math.pow(10, min);
+    x = Math.round(Math.pow(10, x)/min10)*min10;
+  }
+  if ( param == "T" )
+    T_value = x;
+  setValue(param+"_", x);
+  gl.uniform1f( getLoc(progs.comp, param), x);
+  gl.useProgram(null);
+}
+
+// utility
+
+function rotate(list)
+{ list.push(list.shift()); }
+
+// math
+
+var randGauss_next = NaN;
+function randGauss()
+{
+  var r = randGauss_next;
+  if ( isNaN(r) )
+  {
+        r = Math.sqrt(-2*Math.log(Math.random()));
+    var v = 2*Math.PI*Math.random();
+    randGauss_next = r*Math.cos(v);
+    return r*Math.sin(v);
+  }
+  else
+  {
+    randGauss_next = NaN;
+    return r;
+  }
+}
+
+// true if 'a' and 'b' are coprime
+function coprimeQ(a, b)
+{
+  var t;
+  while (b !== 0)
+  {
+    t = b;
+    b = a%t;
+    a = t;
+  }
+  return a === 1;
+}
+
+//
+
+function resetTextureL(texture, tex0, n, Lx, Ly)
+{
+  var format = [null, gl.LUMINANCE, gl.LUMINANCE_ALPHA, gl.RGB, gl.RGBA][n];
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  // target, level, internalformat, width, height, border, format, type, data
+  gl.texImage2D( gl.TEXTURE_2D, 0, format, Lx, Ly, 0,
+                 format, gl.FLOAT, tex0 );
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+function resetTexture(texture, tex0, n)
+{ resetTextureL(texture, tex0, n, Lx, Ly); }
+
+var randX0, rand0, Psi0, PsiRed0, randomPsiQ=true;
+function resetTextures(n)
+{
+  var psi0 = randomPsiQ ? Psi0 : PsiRed0;
+  
+  if ( !fastRand )
+    resetTexture(randXTexs[n], randX0, 4);
+  resetTexture  ( randTexs[n],  rand0, 4);
+  resetTexture  (  PsiTexs[n],   psi0, 4);
+}
+
+//
+
+var rLx = 16;
+var rLy = rLx;
+function updateWindowSize()
+{
+  // should all be powers of 2
+  var rN  = rLx*rLy;
+  var  N  =  Lx* Ly;
+  
+  gl.useProgram(progs.randX);
+  gl.uniform2f( getLoc(progs.randX, "B" ), Lx/rLx, Ly/rLy );
+  gl.useProgram(progs.rand);
+  gl.uniform1f( getLoc(progs.rand , "Lx"), Lx );
+  if ( !fastRand )
+  {
+    gl.uniform1f( getLoc(progs.rand , "Ly"), Ly );
+    gl.uniform2f( getLoc(progs.rand , "B" ), Lx/rLx, Ly/rLy );
+  }
+  gl.useProgram(progs.comp);
+  gl.uniform2f( getLoc(progs.comp , "DX"), 1/Lx, 1/Ly );
+  gl.useProgram(null);
+  
+  Psi0 = new Float32Array(Lx*Ly*4);
+  for (var y=0, i=0; y<Ly; y++)
+    for (var x=0; x<Lx; x++)
+    {
+      var rx=randGauss(), ry=randGauss();
+      Psi0[i++] = rx;
+      Psi0[i++] = ry;
+      Psi0[i++] = rx;
+      Psi0[i++] = ry;
+    }
+  
+  PsiRed0 = new Float32Array(Lx*Ly*4);
+  for (var i=0; i<4*N; ) {
+    PsiRed0[i++] = 1;
+    PsiRed0[i++] = 0;
+  }
+  
+  // random numbers:
+  
+  rand0 = new Float32Array(4*N);
+  for (var i=0; i<4*N; i++)
+    rand0[i] = randGauss();
+  var mean=0, stdev=0;
+  for (var i=0; i<4*N; ++i)
+  {
+    var x = rand0[i];
+    mean  += x;
+    stdev += x*x;
+  }
+  mean /= 4*N;
+  stdev = Math.sqrt(stdev/(4*N) - mean*mean);
+  for (var i=0; i<4*N; ++i)
+    rand0[i] = (rand0[i] - mean)/stdev;
+  
+  if ( !fastRand )
+  {
+    // find an "a" with a long period
+    var a = 4*Math.round(rN/(4*Math.E)) - 3; // assumes rN is a power of 2
+    var n;
+    do
+    {
+      a += 4;
+      var A = a;
+      var n = 1;
+      do { A = (a*A)%rN; ++n; } while (A !== 1);
+    }
+    while (4*n < rN);
+    
+    var c = Math.round( rN*(Math.sqrt(5)-1)/2 );
+    while ( !coprimeQ(rN, c) ) { --c; }
+  }
+  
+  function newRandInts(n)
+  {
+    var RX = new Int32Array(n);
+    for (var i=0; i<n; ++i)
+      RX[i] = i;
+    for (var i=0; i<n; ++i)
+    {
+      var j = Math.floor(Math.random()*n);
+      var t = RX[i];
+      RX[i] = RX[j];
+      RX[j] = t;
+    }
+    return RX;
+  }
+  
+  function setXY(xys, k, n)
+  {
+    xys[k+0] = (          (n%rLx)+0.5)/Lx;
+    xys[k+1] = (Math.floor(n/rLx)+0.5)/Ly;
+  }
+  
+  if ( !fastRand )
+  {
+    randX0  = new Float32Array(4*N);
+    for (var X=0; X<Lx/rLx; ++X)
+    for (var Y=0; Y<Ly/rLy; ++Y)
+    {
+      var RX1a = newRandInts(rN/2);
+      var RX1b = newRandInts(rN/2);
+      var RX2  = newRandInts(rN/2);
+      
+      for (var x=0; x<rLx; ++x)
+      for (var y=0; y<rLy; ++y)
+      {
+        var xy =  y*rLx + x;
+        var XY = (Y*rLy + y)*Lx + (X*rLx + x);
+        setXY( randX0, 4*XY+0, 2*(x%2==0 ? RX1a : RX1b)[Math.floor(xy/2)] );
+        setXY( randX0, 4*XY+2, x%2 === 0 ? NaN : 2*RX2[(xy-1)/2] );
+      }
+    }
+    
+    var mult0 = new Float32Array(2*rN);
+    for (var i=0; i<rN; ++i)
+      setXY(mult0, 2*i, (a*i+c)%rN);
+    
+    resetTextureL(multTex, mult0, 2, rLx, rLy);
+  }
+  resetTextures(0);
+  resetTextures(1);
+  resetTexture(readTex, Psi0, 4);
+}
+
+var Lx, Ly;
+var fastRand = false;
+
+var progs = {};
+
+var canvas, gl;
+var multTex, randXTexs=[], randXFBOs=[], randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
+
+var mouseIsDown=false, comp_mouseIsDownLoc, mousePos={x:0,y:0}, comp_mousePosLoc;
+
+function main()
+{
+  // get opengl ----------------------------------------------------------------------
+  
+  canvas = document.getElementById("canvas");
+  var err = "Your browser does not support ";
+  Lx = canvas.width;
+  Ly = canvas.height;
+  
+  //var c_w = window.innerWidth - 50,  c_h = window.innerHeight - 10;
+  //canvas.width = c_w;   canvas.height = c_h;
+  //gl.viewportWidth = canvas.width;
+  //gl.viewportHeight = canvas.height;
+  //gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+  
+  if ( !window.WebGLRenderingContext )
+  { alert(err + "WebGL. See http://get.webgl.org"); return; }
+  
+  try { gl = canvas.getContext("webgl"); } catch(e) {}
+  if ( !gl ) try { gl = canvas.getContext("experimental-webgl"); } catch(e) {}
+  if ( !gl ) { alert("Can't get WebGL"); return; }
+  
+  var ext;
+  try { ext = gl.getExtension("OES_texture_float"); } catch(e) {}
+  if ( !ext ) { alert(err +   "OES_texture_float extension"); return; }
+  
+//   var ext2;
+//   try { ext2 = gl.getExtension("WEBGL_color_buffer_float"); } catch(e) {}
+//   if ( !ext2 ) { alert(err +   "WEBGL_color_buffer_float extension"); return; }
+  
+  //alert(gl.getSupportedExtensions());
+  
+  // compile shaders ----------------------------------------------------------------------
+  
+  function getShader(shader_name)
+  {
+    var shaderScript = document.getElementById(shader_name);
+    
+    var src = "";
+    var i = shaderScript.firstChild;
+    while (i)
+    {
+      if (i.nodeType === 3)
+        src += i.textContent;
+      i = i.nextSibling;
+    }
+    
+    var shader = gl.createShader( shaderScript.type === "x-shader/x-fragment" ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER );
+    gl.shaderSource(shader, src);
+    gl.compileShader(shader);
+    if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) )
+      alert( gl.getShaderInfoLog(shader) );
+    
+    return shader;
+  }
+  var vertex_shader = getShader("vertex-shader");
+  
+  function makeProgram(shader_name)
+  {
+    var prog = gl.createProgram(shader_name);
+    gl.attachShader(prog, vertex_shader );
+    gl.attachShader(prog, getShader(shader_name) );
+    gl.linkProgram(prog);
+    if ( !gl.getProgramParameter(prog, gl.LINK_STATUS) )
+    { alert("Could not link "+shader_name); }
+    return prog;
+  }
+  
+  progs.randX = makeProgram("randX-frag-shader");
+  progs.rand  = makeProgram(fastRand ? "fast-rand-frag-shader" : "rand-frag-shader");
+  progs.comp  = makeProgram( "comp-frag-shader");
+  progs.show  = makeProgram( "show-frag-shader");
+  progs.read  = makeProgram( "read-frag-shader");
+  
+  // setup textures ----------------------------------------------------------------------
+  
+  function makeTexture()
+  {
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
+    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    return texture;
+  }
+  
+  function makeFBO(texture)
+  {
+    var FBO = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
+                            gl.TEXTURE_2D, texture, 0);
+    //if( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
+    //  alert(err + "FLOAT as the color attachment to an FBO");
+    return FBO;
+  }
+  
+  function makeTexPairs(textures, FBOs)
+  {
+    for (var texNum=0; texNum<2; ++texNum) {
+      var texture = makeTexture();
+      var FBO = makeFBO(texture);
+      textures.push(texture);
+      FBOs    .push(FBO);
+    }
+  }
+  
+  multTex = makeTexture();
+  makeTexPairs(randXTexs, randXFBOs);
+  makeTexPairs( randTexs,  randFBOs);
+  makeTexPairs(  PsiTexs,   PsiFBOs);
+  readTex = makeTexture();
+  readFBO = makeFBO(readTex);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  
+  if( gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE )
+    alert(err + "FLOAT as the color attachment to a FBO");
+  
+  var colorPixels = [];
+  for (var t=0; t<7; ++t)
+    colorPixels.push(1,1,1);
+  colorPixels.push(0,1,1, 0,0,1, 1,0,1, 1,0,0, 1,1,0, 0,1,0, 0,1,1);
+  colorPixels.push(0,1,1, 0,0,1, 1,0,1, 1,0,0, 1,1,0, 0,1,0, 0,1,1);
+  for (var i=2*7*3; i<3*7*3; ++i)
+    colorPixels[i] *= 0.5;
+//   for (var t=0; t<7; ++t)
+//     colorPixels.push(0,0,0);
+  for (var i=0; i<colorPixels.length; ++i)
+    colorPixels[i] = Math.round(255 * colorPixels[i]);
+  
+  colorTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, colorTex);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  // target, level, internalformat, width, height, border, format, type, data
+  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 7, 3, 0,
+                 gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(colorPixels) );
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  
+  // vertex shader ----------------------------------------------------------------------
+  
+  var vertexData = new Float32Array([
+    -1,-1,  +1,-1,  -1,+1,  +1,+1,
+     0, 0,   1, 0,   0, 1,   1, 1]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
+  function setVertices(prog, attrib, i)
+  {
+    var aLoc = gl.getAttribLocation(prog, attrib);
+    gl.enableVertexAttribArray(aLoc);
+    gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, i*8*4);
+  }
+  for (var progName in progs)
+  {
+    var prog = progs[progName];
+    setVertices(prog, "aVertexPos", 0);
+    setVertices(prog, "aCoord", 1);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  
+  // ----------------------------------------------------------------------
+  
+  var params = ["a", "T", "gamma", "g", "dt", "F"];
+  for (var i=0; i<params.length; ++i)
+    setParam(params[i]);
+  setSteps();
+  
+  randX_uMultLoc       = getLoc(progs.randX, "uMult");
+  randX_uRandXLoc      = getLoc(progs.randX, "uRandX");
+   rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
+   rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
+   rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
+  if ( !fastRand )
+  {rand_uRandXLoc      = getLoc(progs.rand , "uRandX");}
+   rand_uRandLoc       = getLoc(progs.rand , "uRand");
+   comp_uRandLoc       = getLoc(progs.comp , "uRand");
+   comp_uPsiLoc        = getLoc(progs.comp , "uPsi");
+   comp_mouseIsDownLoc = getLoc(progs.comp , "mouseIsDown");
+   comp_mousePosLoc    = getLoc(progs.comp , "mousePos");
+   show_uPsiLoc        = getLoc(progs.show , "uPsi");
+   show_uColorTexLoc   = getLoc(progs.show , "uColorTex");
+  
+  updateWindowSize();
+  
+  canvas.addEventListener("mousedown", function(event){mouseIsDown=true; }, false);
+  canvas.addEventListener("mouseup"  , function(event){mouseIsDown=false;}, false);
+  canvas.addEventListener("mousemove", function(event){mousePos=getMousePos(event);}, false);
+  
+  setInterval(updateFPS, 500);
+  anim();
+}
+
+var rand_uOffsetLoc, rand_uOffset1Loc, rand_uOffset2Loc;
+var randX_uMultLoc , rand_uRandXLoc, comp_uRandLoc, show_uPsiLoc,
+    randX_uRandXLoc, rand_uRandLoc , comp_uPsiLoc , show_uColorTexLoc;
+var randNum = 0;
+function setTex(n, tex, loc)
+{
+  gl.activeTexture(gl.TEXTURE0+n);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(loc, n);
+}
+function update()
+{
+  if (T_value > 0)
+  {
+    if ( !fastRand )
+    {
+      gl.useProgram(progs.randX);
+      setTex(0,  multTex    , randX_uMultLoc );
+      setTex(1, randXTexs[0], randX_uRandXLoc);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, randXFBOs[1]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      rotate(randXTexs);
+      rotate(randXFBOs);
+    }
+    
+    gl.useProgram(progs.rand);
+    randNum = fastRand ? 1 : (randNum+1)%2;
+    gl.uniform2f(rand_uOffsetLoc , (Math.floor(Math.random()*(Lx/2))*2+randNum)/Lx,
+                                    Math.floor(Math.random()* Ly   )     /Ly);
+    gl.uniform2f(rand_uOffset1Loc,  Math.floor(Math.random()*(Lx/2))*2   /Lx,
+                                    Math.floor(Math.random()* Ly   )     /Ly);
+    gl.uniform2f(rand_uOffset2Loc, (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
+                                    Math.floor(Math.random()* Ly   )     /Ly);
+    if ( !fastRand )
+      setTex(0, randXTexs[0], rand_uRandXLoc);
+    setTex  (1,  randTexs[0], rand_uRandLoc );
+    gl.bindFramebuffer(gl.FRAMEBUFFER, randFBOs[1]);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    rotate(randTexs);
+    rotate(randFBOs);
+  }
+  
+  gl.useProgram(progs.comp);
+  gl.uniform1i(comp_mouseIsDownLoc, mouseIsDown);
+  gl.uniform2f(comp_mousePosLoc, mousePos.x, canvas.height-mousePos.y);
+  setTex(0, randTexs[0], comp_uRandLoc);
+  setTex(1,  PsiTexs[0], comp_uPsiLoc );
+  gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
+      var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if ( status != gl.FRAMEBUFFER_COMPLETE ) {
+        if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
+        else if ( status == gl.FRAMEBUFFER_UNDEFINED ) alert("GL_FRAMEBUFFER_UNDEFINED");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
+        else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("GL_FRAMEBUFFER_UNSUPPORTED");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) alert("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) alert("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+        else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("FRAMEBUFFER_UNSUPPORTED");
+        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
+        else
+          alert(status);
+      }
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  rotate(PsiTexs);
+  rotate(PsiFBOs);
+}
+function drawFrame()
+{
+  gl.useProgram(progs.show);
+  setTex(0,   PsiTexs[0], show_uPsiLoc     );
+  setTex(1, colorTex    , show_uColorTexLoc);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.useProgram(null);
+  ++frames;
+}
+
+var delay=0, nsteps=1, animateQ=true;
+function anim()
+{
+  if ( animateQ )
+  {
+    for (var count=0; count<nsteps; ++count)
+      update();
+    drawFrame();
+    
+    if (delay === 0)
+      requestAnimationFrame(anim);
+    else
+      setTimeout("requestAnimationFrame(anim)", delay);
+  }
+}
+
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+// requestAnimationFrame polyfill by Erik Möller. fixes from Paul Irish and Tino Zijdel
+// MIT license
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame  = window[vendors[x]+'CancelAnimationFrame']
+                                    || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+function run()
+{
+  animateQ = !animateQ;
+  if ( animateQ ) {
+    setValue('runButton', 'stop');
+    anim();
+  }
+  else
+    setValue('runButton', 'run');
+}
+
+function resetPsi(randomQ)
+{
+  randomPsiQ = randomQ;
+  resetTextures(0);
+  randNum = 0;
+  
+  if ( !animateQ )
+    requestAnimationFrame(drawFrame);
+}
+
+var frames=0, lastTime=new Date().getTime();
+function updateFPS()
+{
+  var time = new Date().getTime();
+  var fps = Math.round(1000*frames/(time - lastTime));
+  setValue("framerate", fps);
+  frames = 0;
+  lastTime = time;
+}
+
+function setDelay(val) { delay = parseInt(val); }
+
+function setSteps() {
+  nsteps = Math.round(Math.pow(10, getValue("nsteps")))
+  setValue("steps_", nsteps);
+}
+
+function getMousePos(event) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  };
+}
+
+// debug: check that randTexs have 0 mean and 1 std dev
+function check_randTexs()
+{
+  gl.useProgram(progs.read);
+  setTex( 0, randTexs[0], getLoc(progs.read, "uTex") );
+  gl.bindFramebuffer(gl.FRAMEBUFFER, readFBO);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  
+  var N    = Lx*Ly*2;
+  var tex0 = new Uint8Array  (N*2);
+  var tex  = new Float32Array(N);
+  gl.readPixels(0, 0, Lx, Ly, gl.RGBA, gl.UNSIGNED_BYTE, tex0);
+  var M = 8;
+  var mean=0, stdev=0;
+  for (var i=0; i<N; ++i)
+  {
+    var a    = tex0[2*i+0];
+    var b    = tex0[2*i+1];
+    var posQ = a >= 128;
+    if ( posQ )
+      a -= 128;
+    var A = a + b/256;
+    A = (posQ ? 1 : -1)*Math.exp( (M/64)*(A - 64) );
+    tex[i] = A;
+    mean  += A;
+    stdev += A*A;
+  }
+  mean /= N;
+  stdev = Math.sqrt(stdev/(N)-mean*mean);
+  alert([mean, stdev]); // should be ~[0,1]. unfortunately half of the statistics aren't read out
+  for (var i=0; i<0; ++i)
+    alert(tex[i]);
+}
+
+</script>
+
+<body onload="main()">
+
+<canvas id="canvas" width="1024" height="1024"></canvas><br> <!--must be power of 2?-->
+<button onclick="resetPsi(true)">randomize</button>
+<button onclick="resetPsi(false)">clear</button>
+<input type="button" onclick="run()" value="stop" size="1" id="runButton">
+delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
+fps:<input size="2" id="framerate">
+
+a:<input     type="range" id="a"      min="-4" max="2" step="0.1" value="0"   onchange='setParam("a"    )'><input size="2" id="a_">     <!--lattice constant, just rescales gamma and g-->
+T:<input     type="range" id="T"      min="-4" max="2" step="0.1" value="-4"  onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
+Ɣ:<input     type="range" id="gamma"  min="-4" max="2" step="0.1" value="0"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
+g:<input     type="range" id="g"      min="-4" max="2" step="0.1" value="0"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
+F:<input     type="range" id="F"      min="-1" max="3" step="0.1" value="0.5" onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
+dt:<input    type="range" id="dt"     min="-4" max="2" step="0.1" value="-1"  onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
+steps:<input type="range" id="nsteps" min="0"  max="2" step="0.1" value="1.1" onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
+
+</body></html>
