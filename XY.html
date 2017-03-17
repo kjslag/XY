@@ -858,19 +858,19 @@ function check_randTexs()
 
 <body onload="main()">
 
-<canvas id="canvas" width="1024" height="1024"></canvas><br> <!--must be power of 2?-->
+<canvas id="canvas" width="512" height="512"></canvas><br> <!--must be power of 2?-->
 <button onclick="resetPsi(true)">randomize</button>
 <button onclick="resetPsi(false)">clear</button>
 <input type="button" onclick="run()" value="stop" size="1" id="runButton">
 delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
 
-a:<input     type="range" id="a"      min="-4" max="2" step="0.1" value="0"   onchange='setParam("a"    )'><input size="2" id="a_">     <!--lattice constant, just rescales gamma and g-->
-T:<input     type="range" id="T"      min="-4" max="2" step="0.1" value="-4"  onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
-Ɣ:<input     type="range" id="gamma"  min="-4" max="2" step="0.1" value="0"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
-g:<input     type="range" id="g"      min="-4" max="2" step="0.1" value="0"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
-F:<input     type="range" id="F"      min="-1" max="3" step="0.1" value="0.5" onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
-dt:<input    type="range" id="dt"     min="-4" max="2" step="0.1" value="-1"  onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
-steps:<input type="range" id="nsteps" min="0"  max="2" step="0.1" value="1.1" onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
+a:<input     type="range" id="a"      min="-3" max="1" step="0.1" value="0"   onchange='setParam("a"    )'><input size="2" id="a_">     <!--lattice constant, just rescales gamma and g-->
+T:<input     type="range" id="T"      min="-3" max="2" step="0.1" value="-4"  onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
+Ɣ:<input     type="range" id="gamma"  min="-3" max="2" step="0.1" value="0"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
+g:<input     type="range" id="g"      min="-3" max="2" step="0.1" value="0"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
+F:<input     type="range" id="F"      min="-1" max="2" step="0.1" value="0.7" onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
+dt:<input    type="range" id="dt"     min="-3" max="0" step="0.1" value="-1"  onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
+steps:<input type="range" id="nsteps" min="0"  max="2" step="0.1" value="0.8" onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
 
 </body></html>
