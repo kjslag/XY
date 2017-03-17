@@ -10,7 +10,7 @@ Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
-#### description of parameters (play with these!): ####
+#### description of parameters (try adjusting these!): ####
 * a: lattice constant (distance between spins) (just rescales Ɣ and g)
 * T: temperature of the bath
 * Ɣ: coupling strength to thermal bath at temperature T
