@@ -699,18 +699,15 @@ function update()
     rotate(randFBOs);
   }
   
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("1");
   gl.useProgram(progs.comp);
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("2");
   gl.uniform1i(comp_mouseIsDownLoc, mouseIsDown);
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("3");
   gl.uniform2f(comp_mousePosLoc, mousePos.x, canvas.height-mousePos.y);
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("4");
   setTex(0, randTexs[0], comp_uRandLoc);
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("5");
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
   if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("6");
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
+  alert("bound");
+  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("1");
       var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
       if ( status != gl.FRAMEBUFFER_COMPLETE ) {
         if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
@@ -922,5 +919,5 @@ The spins in this simulation are soft, which means that the 2-component vector a
 Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
-test4
+test5
 </body></html>
