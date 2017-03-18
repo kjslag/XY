@@ -443,7 +443,8 @@ function updateWindowSize()
   }
   resetTextures(0);
   resetTextures(1);
-  resetTexture(readTex, Psi0, 4);
+  if (readTex)
+    resetTexture(readTex, Psi0, 4);
 }
 
 var Lx, Ly;
@@ -572,8 +573,10 @@ function main()
   makeTexPairs(randXTexs, randXFBOs);
   makeTexPairs( randTexs,  randFBOs);
   makeTexPairs(  PsiTexs,   PsiFBOs);
-  readTex = makeTexture();
-  readFBO = makeFBO(readTex);
+  if (useRead) {
+    readTex = makeTexture();
+    readFBO = makeFBO(readTex);
+  }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
   
@@ -837,6 +840,8 @@ function getMousePos(event) {
     y: event.clientY - rect.top
   };
 }
+
+var useRead = false;
 
 // debug: check that randTexs have 0 mean and 1 std dev
 function check_randTexs()
