@@ -705,22 +705,22 @@ function update()
   setTex(0, randTexs[0], comp_uRandLoc);
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
-      var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-      if ( status != gl.FRAMEBUFFER_COMPLETE ) {
-        if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
-        else if ( status == gl.FRAMEBUFFER_UNDEFINED ) alert("GL_FRAMEBUFFER_UNDEFINED");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
-        else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("GL_FRAMEBUFFER_UNSUPPORTED");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) alert("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) alert("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
-        else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("FRAMEBUFFER_UNSUPPORTED");
-        else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
-        else
-          alert(status);
-      }
+//       var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+//       if ( status != gl.FRAMEBUFFER_COMPLETE ) {
+//         if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
+//         else if ( status == gl.FRAMEBUFFER_UNDEFINED ) alert("GL_FRAMEBUFFER_UNDEFINED");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
+//         else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("GL_FRAMEBUFFER_UNSUPPORTED");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) alert("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) alert("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+//         else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("FRAMEBUFFER_UNSUPPORTED");
+//         else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
+//         else
+//           alert(status);
+//       }
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   rotate(PsiTexs);
   rotate(PsiFBOs);
@@ -916,5 +916,5 @@ The spins in this simulation are soft, which means that the 2-component vector a
 Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
-test2
+test3
 </body></html>
