@@ -450,7 +450,6 @@ function updateWindowSize()
 }
 
 var Lx, Ly;
-var fastRand = true;
 
 var progs = {};
 
@@ -723,10 +722,7 @@ function update()
   gl.uniform2f(comp_mousePosLoc, mousePos.x, canvas.height-mousePos.y);
   setTex(0, randTexs[0], comp_uRandLoc);
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("6");
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
-  alert("bound");
-  if ( gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE ) alert("1");
   checkFBO();
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   rotate(PsiTexs);
@@ -741,8 +737,8 @@ function drawFrame()
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   
   var err = gl.getError();
-  if ( err != gl.NO_ERROR ) {
-    alert("err");
+  if ( err != gl.NO_ERROR && showAlerts ) {
+    alert("GL error");
   }
   
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -754,7 +750,7 @@ function drawFrame()
 function checkFBO()
 {
   var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if ( status != gl.FRAMEBUFFER_COMPLETE ) {
+  if ( status != gl.FRAMEBUFFER_COMPLETE && showAlerts ) {
     if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
     else if ( status == gl.FRAMEBUFFER_UNDEFINED ) alert("GL_FRAMEBUFFER_UNDEFINED");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
@@ -897,6 +893,9 @@ function check_randTexs()
   for (var i=0; i<0; ++i)
     alert(tex[i]);
 }
+
+var fastRand = true;
+var showAlerts = true;
 
 </script>
 
