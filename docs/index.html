@@ -329,8 +329,10 @@ function updateWindowSize()
   var rN  = rLx*rLy;
   var  N  =  Lx* Ly;
   
-  gl.useProgram(progs.randX);
-  gl.uniform2f( getLoc(progs.randX, "B" ), Lx/rLx, Ly/rLy );
+  if ( !fastRand ) {
+    gl.useProgram(progs.randX);
+    gl.uniform2f( getLoc(progs.randX, "B" ), Lx/rLx, Ly/rLy );
+  }
   gl.useProgram(progs.rand);
   gl.uniform1f( getLoc(progs.rand , "Lx"), Lx );
   if ( !fastRand )
@@ -527,11 +529,12 @@ function main()
     return prog;
   }
   
-  progs.randX = makeProgram("randX-frag-shader");
-  progs.rand  = makeProgram(fastRand ? "fast-rand-frag-shader" : "rand-frag-shader");
-  progs.comp  = makeProgram( "comp-frag-shader");
-  progs.show  = makeProgram( "show-frag-shader");
-  progs.read  = makeProgram( "read-frag-shader");
+  if ( !fastRand )
+    progs.randX = makeProgram("randX-frag-shader");
+  progs.rand    = makeProgram(fastRand ? "fast-rand-frag-shader" : "rand-frag-shader");
+  progs.comp    = makeProgram( "comp-frag-shader");
+  progs.show    = makeProgram( "show-frag-shader");
+  progs.read    = makeProgram( "read-frag-shader");
   
   // setup textures ----------------------------------------------------------------------
   
@@ -570,9 +573,10 @@ function main()
   
   multTex = makeTexture();
   for (var texNum=0; texNum<2; ++texNum) {
-    randXTexs.push(makeTexture());
-    randTexs .push(makeTexture());
-    PsiTexs  .push(makeTexture());
+    if ( !fastRand )
+      randXTexs.push(makeTexture());
+    randTexs   .push(makeTexture());
+    PsiTexs    .push(makeTexture());
   }
   if (useRead)
     readTex = makeTexture();
@@ -633,11 +637,12 @@ function main()
     setParam(params[i]);
   setSteps();
   
-  randX_uMultLoc       = getLoc(progs.randX, "uMult");
-  randX_uRandXLoc      = getLoc(progs.randX, "uRandX");
-   rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
-   rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
-   rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
+  if ( !fastRand )
+  {randX_uMultLoc       = getLoc(progs.randX, "uMult");
+   randX_uRandXLoc      = getLoc(progs.randX, "uRandX");}
+    rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
+    rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
+    rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
   if ( !fastRand )
   {rand_uRandXLoc      = getLoc(progs.rand , "uRandX");}
    rand_uRandLoc       = getLoc(progs.rand , "uRand");
@@ -653,9 +658,10 @@ function main()
   // ----------------------------------------------------------------------
   
   for (var texNum=0; texNum<2; ++texNum) {
-    randXFBOs.push(makeFBO(randXTexs[texNum]));
-    randFBOs .push(makeFBO( randTexs[texNum]));
-    PsiFBOs  .push(makeFBO(  PsiTexs[texNum]));
+    if ( !fastRand )
+      randXFBOs.push(makeFBO(randXTexs[texNum]));
+    randFBOs   .push(makeFBO( randTexs[texNum]));
+    PsiFBOs    .push(makeFBO(  PsiTexs[texNum]));
   }
   if (useRead)
     readFBO = makeFBO(readTex);
@@ -939,5 +945,5 @@ The spins in this simulation are soft, which means that the 2-component vector a
 Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
-test6
+test7
 </body></html>
