@@ -36,7 +36,7 @@ void main()
 
 <!-- http://en.wikipedia.org/wiki/Linear_congruential_generator -->
 <script id="randX-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uMult;
 uniform sampler2D uRandX;
@@ -55,7 +55,7 @@ void main()
 
 <!-- http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html -->
 <script id="rand-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uRandX;
 uniform sampler2D uRand;
@@ -89,7 +89,7 @@ void main()
 </script>
 
 <script id="fast-rand-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uRand;
 varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
@@ -113,7 +113,7 @@ void main()
 </script>
 
 <script id="comp-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uRand;
 uniform sampler2D uPsi;
@@ -181,7 +181,7 @@ void main()
 </script>
 
 <script id="show-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uPsi;
 uniform sampler2D uColorTex;
@@ -198,7 +198,7 @@ void main()
 </script>
 
 <script id="read-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uTex;
 varying vec2 vCoord;
