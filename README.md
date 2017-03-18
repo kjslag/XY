@@ -15,7 +15,7 @@ The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
 #### description of parameters (try adjusting these!): ####
-* a: lattice constant (distance between spins) (just rescales Ɣ and g)
+* dx: spatial discretization of field theory (effectively just rescales Ɣ and g)
 * T: temperature of the bath
 * Ɣ: coupling strength to thermal bath at temperature T
 * g: energy cost for a spin to not be a unit vector
