@@ -464,8 +464,8 @@ function main()
   
   canvas = document.getElementById("canvas");
   var err = "Your browser does not support ";
-  Lx = urlParam("Lx", urlParam("L", 256));  // must be power of 2
-  Ly = urlParam("Ly", urlParam("L", 256));
+  Lx = urlParam("Lx", defaultL);  // must be power of 2
+  Ly = urlParam("Ly", defaultL);
   canvas.width  = Lx;
   canvas.height = Ly;
   
@@ -728,6 +728,7 @@ function update()
   rotate(PsiTexs);
   rotate(PsiFBOs);
 }
+
 function drawFrame()
 {
   gl.useProgram(progs.show);
@@ -745,6 +746,7 @@ function drawFrame()
   gl.useProgram(null);
   
   ++frames;
+  ++totFrames;
 }
 
 function checkFBO()
@@ -833,7 +835,7 @@ function resetPsi(randomQ)
     requestAnimationFrame(drawFrame);
 }
 
-var frames=0, lastTime=new Date().getTime();
+var frames=0, totFrames=0, lastTime=new Date().getTime(), doneAdjustingSteps=false;
 function updateFPS()
 {
   var time = new Date().getTime();
@@ -841,6 +843,14 @@ function updateFPS()
   setValue("framerate", fps);
   frames = 0;
   lastTime = time;
+  
+  if ( totFrames > 60 && !doneAdjustingSteps ) {
+    doneAdjustingSteps = fps <= 55;
+    if ( doneAdjustingSteps )
+      setSteps2(Math.ceil(nsteps/1.41));
+    else
+      setSteps2(Math.ceil(nsteps*1.41));
+  }
 }
 
 function setDelay(val) { delay = parseInt(val); }
@@ -848,6 +858,12 @@ function setDelay(val) { delay = parseInt(val); }
 function setSteps() {
   nsteps = Math.round(Math.pow(10, getValue("nsteps")))
   setValue("steps_", nsteps);
+}
+
+function setSteps2(steps) {
+  nsteps = steps;
+  setValue("nsteps", Math.log(steps) / Math.log(10));
+  setValue("steps_", steps);
 }
 
 function getMousePos(event) {
@@ -894,6 +910,7 @@ function check_randTexs()
     alert(tex[i]);
 }
 
+var defaultL = urlParam("L", 512);
 var fastRand = true;
 var showAlerts = true;
 
@@ -908,13 +925,13 @@ var showAlerts = true;
 <!-- delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
 
-dx:<input     type="range" id="a"      min="-3" max="1" step="0.1" value="0"    onchange='setParam("a"    )'><input size="2" id="a_">    <!--lattice constant, just rescales gamma and g-->
-T:<input     type="range" id="T"      min="-3" max="2" step="0.1" value="-4"   onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
-Ɣ:<input     type="range" id="gamma"  min="-3" max="2" step="0.1" value="-1"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
-g:<input     type="range" id="g"      min="-3" max="2" step="0.1" value="-1"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
-F:<input     type="range" id="F"      min="-1" max="2" step="0.1" value="0.3"  onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
-dt:<input    type="range" id="dt"     min="-3" max="0" step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
-steps:<input type="range" id="nsteps" min="0"  max="2" step="0.1" value="0.8"  onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
+dx:<input    type="range" id="a"      min="-3" max="1"   step="0.1" value="0"    onchange='setParam("a"    )'><input size="2" id="a_">    <!--lattice constant, just rescales gamma and g-->
+T:<input     type="range" id="T"      min="-3" max="2"   step="0.1" value="-4"   onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
+Ɣ:<input     type="range" id="gamma"  min="-3" max="2"   step="0.1" value="-1"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
+g:<input     type="range" id="g"      min="-3" max="2"   step="0.1" value="-1"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
+F:<input     type="range" id="F"      min="-1" max="2"   step="0.1" value="0.3"  onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
+dt:<input    type="range" id="dt"     min="-3" max="0"   step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
+steps:<input type="range" id="nsteps" min="0"  max="2.5" step="0.1" value="0"    onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
 
 <br>
 
@@ -944,5 +961,5 @@ The spins in this simulation are soft, which means that the 2-component vector a
 Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
-test8 highp
+
 </body></html>
