@@ -668,6 +668,7 @@ function main()
   // ----------------------------------------------------------------------
   
   canvas.addEventListener("mousedown", function(event){mouseIsDown=true; }, false);
+  canvas.addEventListener("touchstart", function(event){mouseIsDown=true; }, false);
   canvas.addEventListener("mouseup"  , function(event){mouseIsDown=false;}, false);
   canvas.addEventListener("mousemove", function(event){mousePos=getMousePos(event);}, false);
   
@@ -988,7 +989,7 @@ Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
-<br>
+<br>test:touchstart
 <br>
 
 the source: <a href="https://github.com/kjslag/XY">https://github.com/kjslag/XY</a>
