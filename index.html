@@ -22,6 +22,9 @@ http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html
 <html><head>
 <title>XY</title>
 
+<meta name="viewport" content="width=device-width">
+<!-- https://developers.google.com/web/updates/2013/12/300ms-tap-delay-gone-away -->
+
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec2 aVertexPos;
 attribute vec2 aCoord;
@@ -670,9 +673,9 @@ function main()
   canvas.addEventListener("mousedown" , function(event){mousePos=getMousePos(event); mouseIsDown=true ;}, false);
 //   canvas.addEventListener("touchstart", function(event){mousePos=getMousePos(event); mouseIsDown=true ;}, false);
   canvas.addEventListener("mouseup"   , function(event){                             mouseIsDown=false;}, false);
-//   canvas.addEventListener("touchend"  , function(event){                             mouseIsDown=false;}, false);
+  canvas.addEventListener("touchend"  , function(event){                             mouseIsDown=false;}, false);
   canvas.addEventListener("mousemove" , function(event){mousePos=getMousePos(event);                        }, false);
-//   canvas.addEventListener("touchmove" , function(event){mousePos=getMousePos(event); event.preventDefault();}, false);
+  canvas.addEventListener("touchmove" , function(event){mousePos=getMousePos(event); event.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
   anim();
@@ -937,9 +940,6 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 
 <body onload="main()">
 
-<meta name="viewport" content="width=device-width">
-<!-- https://developers.google.com/web/updates/2013/12/300ms-tap-delay-gone-away -->
-
 <div id="errDIV" style="display: none;">
 <font size="7" color="red">ERROR</font>
 <br>
@@ -994,7 +994,7 @@ Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
-<br>test5
+<br>test6
 <br>
 
 the source: <a href="https://github.com/kjslag/XY">https://github.com/kjslag/XY</a>
