@@ -126,7 +126,8 @@ uniform vec2 DX;
 
 // TODO
 uniform float a;
-uniform float T;
+// uniform float T;
+uniform float xi0; // sqrt(2.*_gamma*T/dt)
 uniform float gamma;
 uniform float g;
 uniform float dt;
@@ -159,7 +160,7 @@ void main()
   vec2 psi4   = texture2D(uPsi, mod(X-dY,1.)).xy;
   vec2 psiOld = texture2D(uPsi,     X       ).zw;
   
-  vec2 F0   = _g*(1.-dot(psi,psi))*psi + (psi1 + psi2 + psi3 + psi4 - 4.*psi);
+  vec2 F0 = _g*(1.-dot(psi,psi))*psi + (psi1 + psi2 + psi3 + psi4 - 4.*psi);
   if ( mouseIsDown ) {
     float R2    = sq(200.);
     vec2  dist  = mod(X/DX - mousePos + .5/DX, 1./DX) - .5/DX;
@@ -175,9 +176,9 @@ void main()
       //F0+= normalize(dist) * sq(1. - sq(dist2/R2));
     }
   }
-  vec2 rand = texture2D(uRand, X).xy;
-  vec2 xi   = sqrt(2.*_gamma*T/dt) * rand;
-  vec2 psiNew = (2.*psi - (1.-.5*_gamma*dt)*psiOld + (F0+xi)*(dt*dt)) / (1.+.5*_gamma*dt);
+  if ( xi0 > 0. )
+    F0 += xi0 * texture2D(uRand, X).xy;
+  vec2 psiNew = (2.*psi - (1.-.5*_gamma*dt)*psiOld + F0*(dt*dt)) / (1.+.5*_gamma*dt);
   
   gl_FragColor = vec4(psiNew, psi);
 }
@@ -236,7 +237,6 @@ var T_value;
 function setParam(param)
 {
   var min = document.getElementById(param).min;
-  gl.useProgram(progs.comp);
   var x = getValue(param);
   if ( x === min )
     x = 0;
@@ -247,7 +247,11 @@ function setParam(param)
   if ( param == "T" )
     T_value = x;
   setValue(param+"_", x);
-  gl.uniform1f( getLoc(progs.comp, param), x);
+  gl.useProgram(progs.comp);
+  if ( param == "a" || param == "T" || param == "gamma" || param == "dt" )
+    gl.uniform1f(getLoc(progs.comp, "xi0"), Math.sqrt(2*getValue("gamma")*getValue("a")*getValue("T")/getValue("dt")));
+  if ( param != "T" )
+    gl.uniform1f(getLoc(progs.comp, param), x);
   gl.useProgram(null);
 }
 
