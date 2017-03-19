@@ -476,19 +476,19 @@ function main()
   //gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   
   if ( !window.WebGLRenderingContext )
-  { alert(err + "WebGL. See http://get.webgl.org"); return; }
+  { noWebGL('Sorry, your browser does not seem to support WebGL! <br> Please see <a href="http://caniuse.com/#feat=webgl">http://caniuse.com/#feat=webgl</a> to see which browser versions support it.'); return; }
   
   try { gl = canvas.getContext("webgl"); } catch(e) {}
   if ( !gl ) try { gl = canvas.getContext("experimental-webgl"); } catch(e) {}
-  if ( !gl ) { alert("Can't get WebGL"); return; }
+  if ( !gl ) { reportError('Your browser does not seem to have WebGL enabled. <br> Please see <a href="https://superuser.com/a/836833">https://superuser.com/a/836833</a> for help on how to enable it.'); return; }
   
   var ext;
   try { ext = gl.getExtension("OES_texture_float"); } catch(e) {}
-  if ( !ext ) { alert(err +   "OES_texture_float extension"); return; }
+  if ( !ext ) { reportError("Sorry, your device does not support a necessary WebGL extension: OES_texture_float"); return; }
   
 //   var ext2;
 //   try { ext2 = gl.getExtension("WEBGL_color_buffer_float"); } catch(e) {}
-//   if ( !ext2 ) { alert(err +   "WEBGL_color_buffer_float extension"); return; }
+//   if ( !ext2 ) { reportError(err +   "WEBGL_color_buffer_float extension"); return; }
   
   //alert(gl.getSupportedExtensions());
   
@@ -914,9 +914,34 @@ var defaultL = urlParam("L", 512);
 var fastRand = true;
 var showAlerts = true;
 
+function reportError(err)
+{
+  document.getElementById('errDIV').style.display = 'block';
+  document.getElementById('errorText').innerHTML = err;
+}
+
 </script>
 
+<noscript id="noscript">
+<font size="7" color="red">ERROR</font>
+<br><br>
+<big>
+Your browser does not have JavaScript enabled. <br>
+Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">http://www.wikihow.com/Enable-JavaScript-on-Your-Computer</a> for help on how to enable it.
+</big>
+<br><br><br><hr><br><br>
+</noscript>
+
 <body onload="main()">
+
+<div id="errDIV" style="display: none;">
+<font size="7" color="red">ERROR</font>
+<br>
+<big>
+<p id="errorText"></p>
+</big>
+<br><hr><br><br>
+</div>
 
 <canvas id="canvas" width="1" height="1"></canvas><br>
 <button onclick="resetPsi(true)">randomize</button>
@@ -927,8 +952,8 @@ fps:<input size="2" id="framerate">
 
 dx:<input    type="range" id="a"      min="-3" max="1"   step="0.1" value="0"    onchange='setParam("a"    )'><input size="2" id="a_">    <!--lattice constant, just rescales gamma and g-->
 T:<input     type="range" id="T"      min="-3" max="2"   step="0.1" value="-4"   onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
-Ɣ:<input     type="range" id="gamma"  min="-3" max="2"   step="0.1" value="-1"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
-g:<input     type="range" id="g"      min="-3" max="2"   step="0.1" value="-1"   onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
+Ɣ:<input     type="range" id="gamma"  min="-4" max="2"   step="0.1" value="-1"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
+g:<input     type="range" id="g"      min="-3" max="2"   step="0.1" value="0"    onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
 F:<input     type="range" id="F"      min="-1" max="2"   step="0.1" value="0.3"  onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
 dt:<input    type="range" id="dt"     min="-3" max="0"   step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
 steps:<input type="range" id="nsteps" min="0"  max="2.5" step="0.1" value="0"    onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
@@ -939,9 +964,10 @@ other sizes:
 <a href="https://kjslag.github.io/XY/?Lx=256&Ly=256">256x256</a>
 <a href="https://kjslag.github.io/XY/?Lx=512&Ly=512">512x512</a>
 <a href="https://kjslag.github.io/XY/?Lx=1024&Ly=1024">1024x1024</a>
+<a href="https://kjslag.github.io/XY/?Lx=2048&Ly=1024">2048x1024</a>
 
 <ul>
-  <li> dx: spatial discretization of field theory (effectively just rescales Ɣ and g)</li>
+  <li> dx: spatial discretization of the field theory (effectively just rescales Ɣ and g)</li>
   <li> T: temperature of the bath</li>
   <li> Ɣ: coupling strength to thermal bath at temperature T</li>
   <li> g: energy cost for a spin to not be a unit vector</li>
@@ -952,7 +978,7 @@ other sizes:
 
 Simulate the <a href="https://en.wikipedia.org/wiki/Classical_XY_model">XY model</a> using webgl!
 Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
-The vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons!
+The vortices and anti-vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons and positrons!
 
 <br>
 <br>

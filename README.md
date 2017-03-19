@@ -2,7 +2,7 @@
 
 Simulate the [XY model](https://en.wikipedia.org/wiki/Classical_XY_model) using webgl!
 Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
-The vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons!
+The vortices and anti-vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons and positrons!
 
 Try it: <https://kjslag.github.io/XY/?Lx=512&Ly=512>
 
@@ -12,7 +12,7 @@ The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
 #### description of parameters (try adjusting these!): ####
-* dx: spatial discretization of field theory (effectively just rescales Ɣ and g)
+* dx: spatial discretization of the field theory (effectively just rescales Ɣ and g)
 * T: temperature of the bath
 * Ɣ: coupling strength to thermal bath at temperature T
 * g: energy cost for a spin to not be a unit vector
