@@ -670,12 +670,12 @@ function main()
   
   // ----------------------------------------------------------------------
   
-  canvas.addEventListener("mousedown" , function(event){mousePos=getMousePos(event); mouseIsDown=true ;}, false);
-  canvas.addEventListener("touchstart", function(event){mousePos=getMousePos(event); mouseIsDown=true ;}, false);
-//   canvas.addEventListener("mouseup"   , function(event){                             mouseIsDown=false;}, false);
-//   canvas.addEventListener("touchend"  , function(event){                             mouseIsDown=false;}, false);
-  canvas.addEventListener("mousemove" , function(event){mousePos=getMousePos(event);                        }, false);
-  canvas.addEventListener("touchmove" , function(event){mousePos=getMousePos(event); event.preventDefault();}, false);
+  canvas.addEventListener("mousedown" , function(e){mousePos=getMousePos(e); mouseIsDown=true ;}, false);
+  canvas.addEventListener("mouseup"   , function(e){                         mouseIsDown=false;}, false);
+  canvas.addEventListener("mousemove" , function(e){mousePos=getMousePos(e);                   }, false);
+  canvas.addEventListener("touchstart", function(e){mousePos.x = e.touches[0].clientX; mousePos.y = e.touches[0].clientY;  mouseIsDown=true ;}, false);
+  canvas.addEventListener("touchend"  , function(e){                                                                       mouseIsDown=false;}, false);
+  canvas.addEventListener("touchmove" , function(e){mousePos.x = e.touches[0].clientX; mousePos.y = e.touches[0].clientY; e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
   anim();
@@ -994,7 +994,7 @@ Each pixel on the computer represents a spin.
 The color represents the direction of the spin vector.
 Lighter colors indicate that the magnitude of the spin vector is less than 1, while darker colors indicate a magnitude greater than 1.
 
-<br>test9
+<br>test10
 <br>
 
 the source: <a href="https://github.com/kjslag/XY">https://github.com/kjslag/XY</a>
