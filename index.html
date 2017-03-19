@@ -125,13 +125,15 @@ varying vec2 vCoord;
 uniform vec2 DX;
 
 // TODO
-uniform float a;
+// uniform float a;
 // uniform float T;
 uniform float xi0; // sqrt(2.*_gamma*T/dt)
-uniform float gamma;
-uniform float g;
-uniform float dt;
+// uniform float gamma;
+uniform float _g; // g*a*a
+uniform float dt2; // dt*dt
 uniform float F;
+uniform float den; // 1/(1.+.5*_gamma*dt)
+uniform float num; //    1.-.5*_gamma*dt
 
 uniform bool mouseIsDown;
 uniform vec2 mousePos;
@@ -147,9 +149,6 @@ float det2(vec2 a, vec2 b) { return a.x*b.y - a.y*b.x; }
 
 void main()
 { // see /home/k/Documents/Cenke/XY sim.nb for formulas
-  float _gamma = gamma*a;
-  float _g     = g    *a*a;
-  
   vec2  X = vCoord;
   vec2 dX = vec2(DX.x,0.), dY=vec2(0.,DX.y);
   
@@ -178,7 +177,7 @@ void main()
   }
   if ( xi0 > 0. )
     F0 += xi0 * texture2D(uRand, X).xy;
-  vec2 psiNew = (2.*psi - (1.-.5*_gamma*dt)*psiOld + F0*(dt*dt)) / (1.+.5*_gamma*dt);
+  vec2 psiNew = (2.*psi - num*psiOld + F0*dt2) * den;
   
   gl_FragColor = vec4(psiNew, psi);
 }
@@ -230,11 +229,8 @@ function getLoc(prog, name)
 function getValue(id)
 { return document.getElementById(id).value; }
 
-function setValue(id, value)
-{ document.getElementById(id).value = value; }
-
-var T_value;
-function setParam(param)
+var param_cache = {};
+function updateParam(param)
 {
   var min = document.getElementById(param).min;
   var x = getValue(param);
@@ -244,14 +240,49 @@ function setParam(param)
     var min10 = Math.pow(10, min);
     x = Math.round(Math.pow(10, x)/min10)*min10;
   }
-  if ( param == "T" )
-    T_value = x;
+  param_cache[param] = x;
+  return x;
+}
+
+function getParam(param)
+{
+  var x = param_cache[param];
+  if ( x == null )
+    x = updateParam(param);
+  return x;
+}
+
+function setValue(id, value)
+{ document.getElementById(id).value = value; }
+
+var values = {};
+function setParam(param)
+{
+  var x = updateParam(param);
   setValue(param+"_", x);
+  
   gl.useProgram(progs.comp);
-  if ( param == "a" || param == "T" || param == "gamma" || param == "dt" )
-    gl.uniform1f(getLoc(progs.comp, "xi0"), Math.sqrt(2*getValue("gamma")*getValue("a")*getValue("T")/getValue("dt")));
-  if ( param != "T" )
-    gl.uniform1f(getLoc(progs.comp, param), x);
+  var a = getParam("a");
+  var dt = getParam("dt");
+  var _gamma = getParam("gamma") * a;
+  var T = getParam("T");
+  var gamma_or_dt = param == "gamma" || param == "dt";
+  if ( param == "a" || param == "T" || gamma_or_dt )
+  {
+    gl.uniform1f(getLoc(progs.comp, "xi0"), Math.sqrt(2*_gamma*T/dt));
+    if ( gamma_or_dt ) {
+      gl.uniform1f(getLoc(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
+      gl.uniform1f(getLoc(progs.comp, "num"),    1-0.5*_gamma*dt );
+    }
+  }
+  if ( param != "a" && param != "T" && param != "gamma" ) {
+    if ( param == "g" )
+      gl.uniform1f(getLoc(progs.comp, "_g"), x*a*a);
+    else if ( param == "dt" )
+      gl.uniform1f(getLoc(progs.comp, "dt2"), x*x);
+    else
+      gl.uniform1f(getLoc(progs.comp, param), x);
+  }
   gl.useProgram(null);
 }
 
@@ -697,7 +728,7 @@ function setTex(n, tex, loc)
 }
 function update()
 {
-  if (T_value > 0)
+  if (getParam("T") > 0)
   {
     if ( !fastRand )
     {
@@ -855,7 +886,7 @@ function updateFPS()
   lastTime = time;
   
   if ( totFrames > 60 && !doneAdjustingSteps ) {
-    doneAdjustingSteps = fps < 50;
+    doneAdjustingSteps = fps < 40;
     if ( doneAdjustingSteps )
       setSteps2(Math.ceil(nsteps/1.41));
     else
