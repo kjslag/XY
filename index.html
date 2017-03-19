@@ -494,7 +494,7 @@ var progs = {};
 var canvas, gl;
 var multTex, randXTexs=[], randXFBOs=[], randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
 
-var mouseIsDown=false, comp_mouseIsDownLoc, mousePos={x:0,y:0}, comp_mousePosLoc;
+var comp_mouseIsDownLoc, comp_mousePosLoc;
 
 function main()
 {
@@ -640,8 +640,8 @@ function main()
   // target, level, internalformat, width, height, border, format, type, data
   gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 7, 3, 0,
                  gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array(colorPixels) );
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T    , gl.CLAMP_TO_EDGE); // required for non-power-of-two
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S    , gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T    , gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -705,12 +705,24 @@ function main()
   
   // ----------------------------------------------------------------------
   
-  canvas.addEventListener("mousedown" , function(e){mousePos=getMousePos(e); mouseIsDown=true ;}, false);
-  canvas.addEventListener("mouseup"   , function(e){                         mouseIsDown=false;}, false);
-  canvas.addEventListener("mousemove" , function(e){mousePos=getMousePos(e);                   }, false);
-  canvas.addEventListener("touchstart", function(e){mousePos.x = e.touches[0].clientX; mousePos.y = e.touches[0].clientY;  mouseIsDown=true ;}, false);
-  canvas.addEventListener("touchend"  , function(e){                                                                       mouseIsDown=false;}, false);
-  canvas.addEventListener("touchmove" , function(e){mousePos.x = e.touches[0].clientX; mousePos.y = e.touches[0].clientY; e.preventDefault();}, false);
+  function updateDown(q) {
+    gl.useProgram(progs.comp);
+    gl.uniform1i(comp_mouseIsDownLoc, q);
+  }
+  
+  function updatePos(p) {
+    gl.useProgram(progs.comp);
+    gl.uniform2f(comp_mousePosLoc, p.x, canvas.height-p.y);
+  }
+  
+  function updateTouchPos(e) { updatePos({x:e.touches[0].clientX,y:e.touches[0].clientY}); }
+  
+  canvas.addEventListener("mousedown" , function(e){updatePos(getMousePos(e)); updateDown(true );}, false);
+  canvas.addEventListener("mouseup"   , function(e){                           updateDown(false);}, false);
+  canvas.addEventListener("mousemove" , function(e){updatePos(getMousePos(e));                   }, false);
+  canvas.addEventListener("touchstart", function(e){                           updateDown(true );}, false);
+  canvas.addEventListener("touchend"  , function(e){updateTouchPos(e);         updateDown(false);}, false);
+  canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);        e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
   anim();
@@ -759,8 +771,7 @@ function update()
   }
   
   gl.useProgram(progs.comp);
-  gl.uniform1i(comp_mouseIsDownLoc, mouseIsDown);
-  gl.uniform2f(comp_mousePosLoc, mousePos.x, canvas.height-mousePos.y);
+  
   setTex(0, randTexs[0], comp_uRandLoc);
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
