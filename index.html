@@ -355,14 +355,17 @@ function resetTexture(texture, tex0, n)
 var randX0, rand0, Psi0, PsiRed0, randomPsiQ=true;
 function resetTextures(n)
 {
-  if ( randomPsiQ )
-    randomizePsi0();
-  var psi0 = randomPsiQ ? Psi0 : PsiRed0;
+  resetPsiTexture(n);
   
   if ( !fastRand )
     resetTexture(randXTexs[n], randX0, 4);
   resetTexture  ( randTexs[n],  rand0, 4);
-  resetTexture  (  PsiTexs[n],   psi0, 4);
+}
+function resetPsiTexture(n)
+{
+  if ( randomPsiQ )
+    randomizePsi0();
+  resetTexture(PsiTexs[n], randomPsiQ ? Psi0 : PsiRed0, 4);
 }
 
 //
@@ -403,7 +406,6 @@ function updateWindowSize()
   gl.useProgram(null);
   
   Psi0 = new Float32Array(Lx*Ly*4);
-  randomizePsi0();
   
   PsiRed0 = new Float32Array(Lx*Ly*4);
   for (var i=0; i<4*N; ) {
@@ -892,7 +894,7 @@ function run()
 function resetPsi(randomQ)
 {
   randomPsiQ = randomQ;
-  resetTextures(0);
+  resetPsiTexture(0);
   randNum = 0;
   
   if ( !animateQ )
