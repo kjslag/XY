@@ -352,7 +352,7 @@ function resetTextureL(texture, tex0, n, Lx, Ly)
 function resetTexture(texture, tex0, n)
 { resetTextureL(texture, tex0, n, Lx, Ly); }
 
-var randX0, rand0, Psi0, PsiRed0, randomPsiQ=true;
+var randX0, rand0, Psi0;
 function resetTextures(n)
 {
   resetPsiTexture(n);
@@ -363,9 +363,8 @@ function resetTextures(n)
 }
 function resetPsiTexture(n)
 {
-  if ( randomPsiQ )
-    randomizePsi0();
-  resetTexture(PsiTexs[n], randomPsiQ ? Psi0 : PsiRed0, 4);
+  randomizePsi0();
+  resetTexture(PsiTexs[n], Psi0, 4);
 }
 
 //
@@ -406,12 +405,6 @@ function updateWindowSize()
   gl.useProgram(null);
   
   Psi0 = new Float32Array(Lx*Ly*4);
-  
-  PsiRed0 = new Float32Array(Lx*Ly*4);
-  for (var i=0; i<4*N; ) {
-    PsiRed0[i++] = 1;
-    PsiRed0[i++] = 0;
-  }
   
   // random numbers:
   
@@ -891,9 +884,8 @@ function run()
     setValue('runButton', 'run');
 }
 
-function resetPsi(randomQ)
+function resetPsi()
 {
-  randomPsiQ = randomQ;
   resetPsiTexture(0);
   randNum = 0;
   
@@ -1010,8 +1002,7 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 </div>
 
 <canvas id="canvas" width="1" height="1"></canvas><br>
-<button onclick="resetPsi(true)">randomize</button>
-<button onclick="resetPsi(false)">clear</button>
+<button onclick="resetPsi()">randomize</button>
 <input type="button" onclick="run()" value="stop" size="1" id="runButton">
 <!-- delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
