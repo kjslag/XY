@@ -3,6 +3,12 @@
 <!--
 MIT License: Copyright 2017 Kevin Slagle
 
+
+TODO force radius
+TODO import image
+TODO dynamic size?
+TODO better color map
+
 Many thanks to Evgeny Demidov for example code:
 http://www.ibiblio.org/e-notes/
 and Giles Thomas for a webgl tutorial:
@@ -349,6 +355,8 @@ function resetTexture(texture, tex0, n)
 var randX0, rand0, Psi0, PsiRed0, randomPsiQ=true;
 function resetTextures(n)
 {
+  if ( randomPsiQ )
+    randomizePsi0();
   var psi0 = randomPsiQ ? Psi0 : PsiRed0;
   
   if ( !fastRand )
@@ -358,6 +366,18 @@ function resetTextures(n)
 }
 
 //
+
+function randomizePsi0()
+{
+  for (var y=0, i=0; y<Ly; y++)
+    for (var x=0; x<Lx; x++) {
+      var rx=randGauss(), ry=randGauss();
+      Psi0[i++] = rx;
+      Psi0[i++] = ry;
+      Psi0[i++] = rx;
+      Psi0[i++] = ry;
+    }
+}
 
 var rLx = 16;
 var rLy = rLx;
@@ -383,15 +403,7 @@ function updateWindowSize()
   gl.useProgram(null);
   
   Psi0 = new Float32Array(Lx*Ly*4);
-  for (var y=0, i=0; y<Ly; y++)
-    for (var x=0; x<Lx; x++)
-    {
-      var rx=randGauss(), ry=randGauss();
-      Psi0[i++] = rx;
-      Psi0[i++] = ry;
-      Psi0[i++] = rx;
-      Psi0[i++] = ry;
-    }
+  randomizePsi0();
   
   PsiRed0 = new Float32Array(Lx*Ly*4);
   for (var i=0; i<4*N; ) {
