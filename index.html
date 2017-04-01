@@ -348,6 +348,7 @@ function resetTextureL(texture, tex0, n, Lx, Ly)
                  format, gl.FLOAT, tex0 );
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
+//   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
 function resetTexture(texture, tex0, n)
 { resetTextureL(texture, tex0, n, Lx, Ly); }
@@ -361,10 +362,52 @@ function resetTextures(n)
     resetTexture(randXTexs[n], randX0, 4);
   resetTexture  ( randTexs[n],  rand0, 4);
 }
+
+var uploadedImage, uploadedPsi;
+function uploadPsi(event)
+{
+  var fileInput = event.target.files;
+  if ( fileInput.length > 0 ) {
+    var windowURL = window.URL || window.webkitURL;
+    var picURL = windowURL.createObjectURL(fileInput[0]);
+    uploadedImage = new Image();
+    uploadedImage.onload = function() {
+      document.getElementById('resetUploaded').style.visibility = 'visible';
+      resetUploadedPsi();
+      windowURL.revokeObjectURL(picURL);
+    };
+    uploadedImage.src = picURL;
+  }
+}
+
+function resetUploadedPsi()
+{
+  gl.bindTexture(gl.TEXTURE_2D, PsiTexs[0]);
+  // target, level, internalformat, format, type, data
+  gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, uploadedImage);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  
+  if ( !animateQ )
+    requestAnimationFrame(drawFrame);
+}
+
+// var image = new Image();
+// image.crossOrigin = "use-credentials";
+//   image.onload = function() { handleTextureLoaded(cubeImage, cubeTexture); }
+// image.src = 'https://images.pexels.com/photos/104827/cat-pet-animal-domestic-104827.jpeg';
+
 function resetPsiTexture(n)
 {
   randomizePsi0();
+  
+//   gl.bindTexture(gl.TEXTURE_2D, PsiTexs[n]);
+//   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+//   gl.bindTexture(gl.TEXTURE_2D, null);
+
   resetTexture(PsiTexs[n], Psi0, 4);
+//   ev.dataTransfer.items[0].getAsString(function (s){document.getElementById('outText').innerHTML = s;});
+// https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
+
 }
 
 //
@@ -1014,6 +1057,11 @@ g:<input     type="range" id="g"      min="-3" max="2"   step="0.1" value="0"   
 F:<input     type="range" id="F"      min="-1" max="2"   step="0.1" value="1"    onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
 dt:<input    type="range" id="dt"     min="-3" max="0"   step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
 steps:<input type="range" id="nsteps" min="0"  max="2.5" step="0.1" value="0"    onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
+
+<br>
+
+<input type="file" accept="image/*" onchange="uploadPsi(event)"/>
+<button id="resetUploaded" onclick="resetUploadedPsi()" style="visibility: hidden;">reset</button>
 
 <br>
 
