@@ -5,7 +5,7 @@ MIT License: Copyright 2017 Kevin Slagle
 
 
 TODO force radius
-TODO import image
+TODO time step changing
 TODO dynamic size?
 TODO better color map
 
@@ -186,6 +186,40 @@ void main()
   vec2 psiNew = (2.*psi - num*psiOld + F0*dt2) * den;
   
   gl_FragColor = vec4(psiNew, psi);
+}
+</script>
+
+<script id="tran-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uImage;
+varying vec2 vCoord;
+
+const float pi = 3.14159265358979324;
+
+// http://stackoverflow.com/a/17897228/6531137
+vec3 rgb2hsv(vec3 c)
+{
+    vec4 K = vec4(0., -1./3., 2./3., -1.);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+void main()
+{
+  vec3  col    = texture2D(uImage, vCoord).xyz;
+  vec3  hsv    = rgb2hsv(col); // v = max(r,g,b)
+  float theta  = radians(360.) * hsv.x;
+  float min0   = min(min(col.r, col.g), col.b);
+//   float l      = 0.5*(hsv.z + min0);
+  float l      = 1. - 0.5*(max(max(col.r, col.g), col.b) - min0);
+  float a      = 1./16.;
+  vec2  psi    = ((1. + 3.*a + 2.*a*a)/(l + a) - 1. - 2.*a) * vec2(cos(theta), sin(theta));
+  gl_FragColor = vec4(psi, psi);
 }
 </script>
 
@@ -382,14 +416,45 @@ function uploadPsi(event)
 
 function resetUploadedPsi()
 {
-  gl.bindTexture(gl.TEXTURE_2D, PsiTexs[0]);
-  // target, level, internalformat, format, type, data
+  var imageTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, imageTex);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  // target, level, internalformat, width, height, border, format, type, data
   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, uploadedImage);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S    , gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T    , gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  
+  gl.useProgram(progs.tran);
+  setTex(0, imageTex, tran_uImageLoc);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[0]);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  
+  var err = gl.getError();
+  if ( err != gl.NO_ERROR && showAlerts )
+    alert("GL error");
+  
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.useProgram(null);
+  
+  gl.deleteTexture(imageTex);
   
   if ( !animateQ )
     requestAnimationFrame(drawFrame);
 }
+
+// function resetUploadedPsi()
+// {
+//   gl.bindTexture(gl.TEXTURE_2D, PsiTexs[0]);
+//   // target, level, internalformat, format, type, data
+//   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, uploadedImage);
+//   gl.bindTexture(gl.TEXTURE_2D, null);
+//   
+//   if ( !animateQ )
+//     requestAnimationFrame(drawFrame);
+// }
 
 // var image = new Image();
 // image.crossOrigin = "use-credentials";
@@ -612,7 +677,7 @@ function main()
     gl.attachShader(prog, getShader(shader_name) );
     gl.linkProgram(prog);
     if ( !gl.getProgramParameter(prog, gl.LINK_STATUS) )
-    { alert("Could not link "+shader_name); }
+      alert("Could not link "+shader_name);
     return prog;
   }
   
@@ -621,7 +686,9 @@ function main()
   progs.rand    = makeProgram(fastRand ? "fast-rand-frag-shader" : "rand-frag-shader");
   progs.comp    = makeProgram( "comp-frag-shader");
   progs.show    = makeProgram( "show-frag-shader");
-  progs.read    = makeProgram( "read-frag-shader");
+  if (useRead)
+    progs.read  = makeProgram( "read-frag-shader");
+  progs.tran    = makeProgram( "tran-frag-shader");
   
   // setup textures ----------------------------------------------------------------------
   
@@ -739,6 +806,7 @@ function main()
    comp_mousePosLoc    = getLoc(progs.comp , "mousePos");
    show_uPsiLoc        = getLoc(progs.show , "uPsi");
    show_uColorTexLoc   = getLoc(progs.show , "uColorTex");
+   tran_uImageLoc      = getLoc(progs.show , "uImage");
   
   updateWindowSize();
   
@@ -779,7 +847,7 @@ function main()
 }
 
 var rand_uOffsetLoc, rand_uOffset1Loc, rand_uOffset2Loc;
-var randX_uMultLoc , rand_uRandXLoc, comp_uRandLoc, show_uPsiLoc,
+var randX_uMultLoc , rand_uRandXLoc, comp_uRandLoc, show_uPsiLoc,      tran_uImageLoc,
     randX_uRandXLoc, rand_uRandLoc , comp_uPsiLoc , show_uColorTexLoc;
 var randNum = 0;
 function setTex(n, tex, loc)
@@ -840,9 +908,8 @@ function drawFrame()
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   
   var err = gl.getError();
-  if ( err != gl.NO_ERROR && showAlerts ) {
+  if ( err != gl.NO_ERROR && showAlerts )
     alert("GL error");
-  }
   
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.useProgram(null);
@@ -947,10 +1014,12 @@ function updateFPS()
   
   if ( totFrames > 60 && !doneAdjustingSteps ) {
     doneAdjustingSteps = fps < 40;
-    if ( doneAdjustingSteps )
-      setSteps2(Math.ceil(nsteps/1.41));
-    else
-      setSteps2(Math.ceil(nsteps*1.41));
+    if ( animateQ ) {
+      if ( doneAdjustingSteps )
+        setSteps2(Math.ceil(Math.max(nsteps/2,nsteps*fps/70)));
+      else
+        setSteps2(Math.ceil(nsteps*2));
+    }
   }
 }
 
