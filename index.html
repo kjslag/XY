@@ -407,6 +407,7 @@ function uploadPsi(event)
     uploadedImage = new Image();
     uploadedImage.onload = function() {
       document.getElementById('resetUploaded').style.visibility = 'visible';
+      //uploadedImage.style.height = 5;
       resetUploadedPsi();
       windowURL.revokeObjectURL(picURL);
     };
@@ -1152,7 +1153,8 @@ other sizes:
 
 Simulate the <a href="https://en.wikipedia.org/wiki/Classical_XY_model">XY model</a> using webgl!
 Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
-The vortices and anti-vortices are emergent topological excitations with long range (2d) Coulomb interactions, similar to real world electrons and positrons!
+The vortices and anti-vortices are emergent topological excitations with long range (2d) Coulomb interactions,
+  <a href="https://arxiv.org/pdf/cond-mat/0407140">similar</a> to real world electrons and positrons!
 
 <br>
 <br>
