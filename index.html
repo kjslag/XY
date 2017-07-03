@@ -3,11 +3,34 @@
 <!--
 MIT License: Copyright 2017 Kevin Slagle
 
+r/place location:
+https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
+https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
 TODO force radius
 TODO time step changing
 TODO dynamic size?
 TODO better color map
+
+---------------------------------------
+
+TODO What is an (e)lectron made out of?
+(e) is a picute of a blue electron with a ranbow vortex around it
+questioning meme face: http://www.memes.at/faces/questioning.jpg
+
+show range of scales with ? for further dividing electron
+mention past beliefs of indivisible atom and nucleus
+
+2016 nobel prize
+https://www.nobelprize.org/nobel_prizes/physics/laureates/2016/advanced-physicsprize2016.pdf
+
+https://arxiv.org/abs/cond-mat/0407140
+Michael Levin and Xiao-Gang Wen: "We will either establish that photons and electrons are elementary particles, or we will discover that they are emergent phenomena – collective excitations of some deeper structure that we mistake for empty space."
+
+artificial electrons
+Kitaev toric code
+
+---------------------------------------
 
 Many thanks to Evgeny Demidov for example code:
 http://www.ibiblio.org/e-notes/
@@ -23,10 +46,9 @@ http://stackoverflow.com/questions/3881197/opengl-es-2-0-extensions-on-android-d
 http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html
 -->
 
-<meta charset="utf-8">
+<html>
 
-<html><head>
-<title>XY</title>
+<meta charset="utf-8">
 
 <meta name="viewport" content="width=device-width">
 <!-- https://developers.google.com/web/updates/2013/12/300ms-tap-delay-gone-away -->
@@ -269,38 +291,69 @@ function getLoc(prog, name)
 function getValue(id)
 { return document.getElementById(id).value; }
 
-var param_cache = {};
-function updateParam(param)
-{
-  var min = document.getElementById(param).min;
-  var x = getValue(param);
-  if ( x === min )
-    x = 0;
-  else {
-    var min10 = Math.pow(10, min);
-    x = Math.round(Math.pow(10, x)/min10)*min10;
-  }
-  param_cache[param] = x;
-  return x;
-}
-
-function getParam(param)
-{
-  var x = param_cache[param];
-  if ( x == null )
-    x = updateParam(param);
-  return x;
-}
+function getMin(param)
+{ return Number(document.getElementById(param).min); }
 
 function setValue(id, value)
 { document.getElementById(id).value = value; }
 
-var values = {};
-function setParam(param)
+var param_cache = {};
+function getParamFromSlider(param)
 {
-  var x = updateParam(param);
-  setValue(param+"_", x);
-  
+//   var min = Number(document.getElementById(param).min);
+  var x = getValue(param);
+  x = x <= getMin(param) ? 0 : Math.pow(10, x);
+//   if ( x <= min )
+//     x = 0;
+//   else {
+//     var min10 = Math.pow(10, min);
+//     x = Math.round(Math.pow(10, x)/min10)*min10;
+//   }
+  param_cache[param] = x;
+  return x;
+}
+function getParamFromInput(param)
+{
+  var x = Number(getValue(param+"_"));
+  if ( !isNaN(x) )
+    param_cache[param] = x;
+  return x;
+}
+function getParam(param)
+{
+  var x = param_cache[param];
+  if ( x == null )
+    x = getParamFromSlider(param);
+  return x;
+}
+
+function setParamFromSlider(param)
+{
+  var x = getParamFromSlider(param);
+  updateParamInput(param);
+  setParam0(param, x);
+}
+
+function updateParamInput(param)
+{
+  var x = param_cache[param];
+  var p = Math.min(4, Math.max(0, 1+Math.ceil(-Math.log(x)/Math.log(10))));
+  setValue (param+"_", Number(x.toFixed(p)) );
+}
+
+function setParamFromInput(param)
+{
+  var x = getParamFromInput(param);
+  if ( isNaN(x) )
+    updateParamInput(param);
+  else {
+    setValue(param, x <= 0 ? getMin(param) : Math.log(x)/Math.log(10));
+    setParam0(param, x);
+  }
+}
+
+function setParam0(param, x)
+{
   gl.useProgram(progs.comp);
   var a = getParam("a");
   var dt = getParam("dt");
@@ -324,6 +377,29 @@ function setParam(param)
       gl.uniform1f(getLoc(progs.comp, param), x);
   }
   gl.useProgram(null);
+}
+
+function setStepsFromSlider()
+{
+  nsteps = Math.round(Math.pow(10, getValue("nsteps")));
+  setValue("nsteps_", nsteps);
+}
+
+function setStepsFromInput()
+{
+  var x = Math.ceil(Number(getValue("nsteps_")));
+  if (!( isNaN(x) || x <= 0 )) {
+    nsteps = x;
+    setValue("nsteps", Math.log(x) / Math.log(10));
+  }
+  setValue("nsteps_", nsteps);
+}
+
+function setSteps(steps)
+{
+  nsteps = steps;
+  setValue("nsteps" , Math.log(steps) / Math.log(10));
+  setValue("nsteps_", steps);
 }
 
 // utility
@@ -789,8 +865,8 @@ function main()
   
   var params = ["a", "T", "gamma", "g", "dt", "F"];
   for (var i=0; i<params.length; ++i)
-    setParam(params[i]);
-  setSteps();
+    setParamFromSlider(params[i]);
+  setStepsFromSlider();
   
   if ( !fastRand )
   {randX_uMultLoc       = getLoc(progs.randX, "uMult");
@@ -1017,25 +1093,14 @@ function updateFPS()
     doneAdjustingSteps = fps < 40;
     if ( animateQ ) {
       if ( doneAdjustingSteps )
-        setSteps2(Math.ceil(Math.max(nsteps/2,nsteps*fps/70)));
+        setSteps(Math.ceil(Math.max(nsteps/2,nsteps*fps/70)));
       else
-        setSteps2(Math.ceil(nsteps*2));
+        setSteps(Math.ceil(nsteps*2));
     }
   }
 }
 
 function setDelay(val) { delay = parseInt(val); }
-
-function setSteps() {
-  nsteps = Math.round(Math.pow(10, getValue("nsteps")))
-  setValue("steps_", nsteps);
-}
-
-function setSteps2(steps) {
-  nsteps = steps;
-  setValue("nsteps", Math.log(steps) / Math.log(10));
-  setValue("steps_", steps);
-}
 
 function getMousePos(event) {
   var rect = canvas.getBoundingClientRect();
@@ -1093,6 +1158,41 @@ function reportError(err)
 
 </script>
 
+
+<head>
+<title>What is electon?</title>
+
+<link rel="icon" href="vortex.png">
+
+<style>
+h1 { text-align: center; }
+#main {
+  max-width: 1000px;
+  margin: 0 auto; 
+}
+#simulation {
+  text-align: center;
+}
+#canvasDIV {
+  display: inline-block;
+  vertical-align: top;
+  text-align: left;
+}
+#controlDIV {
+  display: inline-block;
+  vertical-align: top;
+  text-align: right;
+  margin-left: 10px;
+}
+</style>
+</head>
+
+
+<body onload="main()">
+
+<!-- <h1> What is an electron made of?</h1> -->
+<!--   <aside>Is it elementary, or is it composite? </aside> -->
+
 <noscript id="noscript">
 <font size="7" color="red">ERROR</font>
 <br><br>
@@ -1103,8 +1203,6 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 <br><br><br><hr><br><br>
 </noscript>
 
-<body onload="main()">
-
 <div id="errDIV" style="display: none;">
 <font size="7" color="red">ERROR</font>
 <br>
@@ -1114,32 +1212,42 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 <br><hr><br><br>
 </div>
 
+<article id="simulation">
+<div id="canvasDIV">
 <canvas id="canvas" width="1" height="1"></canvas><br>
 <button onclick="resetPsi()">randomize</button>
 <input type="button" onclick="run()" value="stop" size="1" id="runButton">
 <!-- delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
-
-dx:<input    type="range" id="a"      min="-3" max="1"   step="0.1" value="0"    onchange='setParam("a"    )'><input size="2" id="a_">    <!--lattice constant, just rescales gamma and g-->
-T:<input     type="range" id="T"      min="-3" max="2"   step="0.1" value="-4"   onchange='setParam("T"    )'><input size="2" id="T_">     <!--temperature-->
-Ɣ:<input     type="range" id="gamma"  min="-4" max="2"   step="0.1" value="-1"   onchange='setParam("gamma")'><input size="2" id="gamma_"> <!--coupling to bath-->
-g:<input     type="range" id="g"      min="-3" max="2"   step="0.1" value="0"    onchange='setParam("g"    )'><input size="2" id="g_">     <!--g |psi-1|^2-->
-F:<input     type="range" id="F"      min="-1" max="2"   step="0.1" value="1"    onchange='setParam("F"    )'><input size="2" id="F_">     <!--force applied when clicking on the system-->
-dt:<input    type="range" id="dt"     min="-3" max="0"   step="0.1" value="-1"   onchange='setParam("dt"   )'><input size="2" id="dt_">    <!--time step-->
-steps:<input type="range" id="nsteps" min="0"  max="2.5" step="0.1" value="0"    onchange='setSteps(       )'><input size="2" id="steps_"> <!--# of time steps per frame-->
-
 <br>
-
 <input type="file" accept="image/*" onchange="uploadPsi(event)"/>
-<button id="resetUploaded" onclick="resetUploadedPsi()" style="visibility: hidden;">reset</button>
-
-<br>
-
+<button id="resetUploaded" onclick="resetUploadedPsi()" style="visibility: hidden;">reset</button><br>
 other sizes:
 <a href="https://kjslag.github.io/XY/?Lx=256&Ly=256">256x256</a>
 <a href="https://kjslag.github.io/XY/?Lx=512&Ly=512">512x512</a>
 <a href="https://kjslag.github.io/XY/?Lx=1024&Ly=1024">1024x1024</a>
 <a href="https://kjslag.github.io/XY/?Lx=2048&Ly=1024">2048x1024</a>
+</div>
+
+<div id="controlDIV">
+dx:    <input type="range" id="a"       onchange='setParamFromSlider("a"    )' min="-3" max="1"   step="0.01" value= "0">
+       <input size="2"     id="a_"      onchange='setParamFromInput ("a"    )'><br> <!--lattice constant, just rescales gamma and g-->
+T:     <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
+       <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
+Ɣ:     <input type="range" id="gamma"   onchange='setParamFromSlider("gamma")' min="-4" max="2"   step="0.01" value="-1">
+       <input size="2"     id="gamma_"  onchange='setParamFromInput ("gamma")'><br> <!--coupling to bath-->
+g:     <input type="range" id="g"       onchange='setParamFromSlider("g"    )' min="-3" max="2"   step="0.01" value= "0">
+       <input size="2"     id="g_"      onchange='setParamFromInput ("g"    )'><br> <!--g |psi-1|^2-->
+F:     <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-1" max="2"   step="0.01" value= "1">
+       <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
+dt:    <input type="range" id="dt"      onchange='setParamFromSlider("dt"   )' min="-3" max="0"   step="0.01" value="-1">
+       <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"   )'><br>  <!--time step-->
+steps: <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        min= "0" max="2.5" step="0.01" value= "0">
+       <input size="2"     id="nsteps_" onchange='setStepsFromInput ()'><br> <!--# of time steps per frame-->
+</div>
+</article>
+
+<article id="main">
 
 <ul>
   <li> dx: spatial discretization of the field theory (effectively just rescales Ɣ and g)</li>
@@ -1167,6 +1275,9 @@ Lighter colors indicate that the magnitude of the spin vector is less than 1, wh
 <br>
 <br>
 
+</div>
+
 the source: <a href="https://github.com/kjslag/XY">https://github.com/kjslag/XY</a>
 
-</body></html>
+</body>
+</html>
