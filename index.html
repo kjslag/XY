@@ -257,8 +257,10 @@ void main()
   vec2  psi    = texture2D(uPsi, vCoord).xy;
   float psi0   = sqrt(dot(psi,psi));
   float theta  = atan(psi.y, psi.x) / radians(360.);
-  vec2  color  = vec2(.5/7.,.5/3.) + vec2(6./7.,2./3.)*vec2( theta+.5, 1./(1.+psi0) );
-  gl_FragColor = texture2D(uColorTex, color); // use texture to calculate color
+  vec2  texPos = vec2(.5/7.,.5/3.) + vec2(6./7.,2./3.)*vec2( theta+.5, 1./(1.+psi0) );
+  vec4  color  = texture2D(uColorTex, texPos); // use texture to calculate color
+  color.xyz    = color.xyz + color.xyz * (color.xyz - color.xyz*color.xyz); // color correction
+  gl_FragColor = color;
 }
 </script>
 
