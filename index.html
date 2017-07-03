@@ -690,8 +690,6 @@ var comp_mouseIsDownLoc, comp_mousePosLoc;
 
 function main()
 {
-  // get opengl ----------------------------------------------------------------------
-  
   canvas = document.getElementById("canvas");
   var err = "Your browser does not support ";
   Lx = urlParam("Lx", defaultL);  // must be power of 2
@@ -1146,7 +1144,8 @@ function check_randTexs()
     alert(tex[i]);
 }
 
-var defaultL = urlParam("L", 512);
+// var defaultL = urlParam("L", Math.max(128, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
+var defaultL = urlParam("L", Math.max(128, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
 var fastRand = true;
 var showAlerts = true;
 
@@ -1220,13 +1219,13 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 <!-- delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
 <br>
-<input type="file" accept="image/*" onchange="uploadPsi(event)"/>
-<button id="resetUploaded" onclick="resetUploadedPsi()" style="visibility: hidden;">reset</button><br>
-other sizes:
+<!-- <input type="file" accept="image/*" onchange="uploadPsi(event)"/> -->
+<!-- <button id="resetUploaded" onclick="resetUploadedPsi()" style="visibility: hidden;">reset</button><br> -->
+<!--other sizes:
 <a href="https://kjslag.github.io/XY/?Lx=256&Ly=256">256x256</a>
 <a href="https://kjslag.github.io/XY/?Lx=512&Ly=512">512x512</a>
 <a href="https://kjslag.github.io/XY/?Lx=1024&Ly=1024">1024x1024</a>
-<a href="https://kjslag.github.io/XY/?Lx=2048&Ly=1024">2048x1024</a>
+<a href="https://kjslag.github.io/XY/?Lx=2048&Ly=1024">2048x1024</a>-->
 </div>
 
 <div id="controlDIV">
