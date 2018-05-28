@@ -517,36 +517,13 @@ function main()
     return texture;
   }
   
-  function makeFBO(texture)
-  {
-    var FBO = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
-                            gl.TEXTURE_2D, texture, 0);
-    checkFBO();
-    return FBO;
-  }
-  
-  function makeTexPairs(textures, FBOs)
-  {
-    for (var texNum=0; texNum<2; ++texNum) {
-      var texture = makeTexture();
-      var FBO = makeFBO(texture);
-      textures.push(texture);
-      FBOs    .push(FBO);
-    }
-  }
-  
   for (var texNum=0; texNum<2; ++texNum) {
     randTexs.push(makeTexture());
     PsiTexs .push(makeTexture());
   }
   if (useRead)
     readTex = makeTexture();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
-  
-  checkFBO();
   
   var colorPixels = [];
   for (var t=0; t<7; ++t)
@@ -555,8 +532,6 @@ function main()
   colorPixels.push(0,1,1, 0,0,1, 1,0,1, 1,0,0, 1,1,0, 0,1,0, 0,1,1);
   for (var i=2*7*3; i<3*7*3; ++i)
     colorPixels[i] *= 0.5;
-//   for (var t=0; t<7; ++t)
-//     colorPixels.push(0,0,0);
   for (var i=0; i<colorPixels.length; ++i)
     colorPixels[i] = Math.round(255 * colorPixels[i]);
   
@@ -615,6 +590,16 @@ function main()
   
   // ----------------------------------------------------------------------
   
+  function makeFBO(texture)
+  {
+    var FBO = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
+                            gl.TEXTURE_2D, texture, 0);
+    checkFBO();
+    return FBO;
+  }
+  
   for (var texNum=0; texNum<2; ++texNum) {
     randFBOs.push(makeFBO(randTexs[texNum]));
     PsiFBOs .push(makeFBO( PsiTexs[texNum]));
@@ -622,16 +607,20 @@ function main()
   if (useRead)
     readFBO = makeFBO(readTex);
   
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  
   // ----------------------------------------------------------------------
   
   function updateDown(q) {
     gl.useProgram(progs.comp);
     gl.uniform1i(comp_mouseIsDownLoc, q);
+    gl.useProgram(null);
   }
   
   function updatePos(p) {
     gl.useProgram(progs.comp);
     gl.uniform2f(comp_mousePosLoc, p.x, canvas.height-p.y);
+    gl.useProgram(null);
   }
   
   function updateTouchPos(e) { updatePos({x:e.touches[0].clientX,y:e.touches[0].clientY}); }
@@ -653,9 +642,10 @@ var comp_uRandLoc, show_uPsiLoc,
 var comp_mouseIsDownLoc, comp_mousePosLoc;
 function setTex(n, tex, loc)
 {
-  gl.activeTexture(gl.TEXTURE0+n);
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.uniform1i(loc, n);
+  // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
+  gl.activeTexture(gl.TEXTURE0+n);    // Tell WebGL we want to affect texture unit n
+  gl.bindTexture(gl.TEXTURE_2D, tex); // Bind the texture to texture unit n
+  gl.uniform1i(loc, n);               // Tell the shader we bound the texture to texture unit n
 }
 function update()
 {
@@ -668,7 +658,7 @@ function update()
                                     Math.floor(Math.random()* Ly   )     /Ly);
     gl.uniform2f(rand_uOffset2Loc, (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
-    setTex(1,  randTexs[0], rand_uRandLoc );
+    setTex(0, randTexs[0], rand_uRandLoc);
     gl.bindFramebuffer(gl.FRAMEBUFFER, randFBOs[1]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     rotate(randTexs);
@@ -680,7 +670,6 @@ function update()
   setTex(0, randTexs[0], comp_uRandLoc);
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
-  checkFBO();
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   rotate(PsiTexs);
   rotate(PsiFBOs);
@@ -698,6 +687,9 @@ function drawFrame()
   if ( err != gl.NO_ERROR && showAlerts )
     reportError("GL error");
   
+  gl.activeTexture(gl.TEXTURE0+0);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.activeTexture(gl.TEXTURE0+1);
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.useProgram(null);
   
@@ -784,7 +776,6 @@ function run()
 function resetPsi()
 {
   resetPsiTexture(0);
-  randNum = 0;
   
   if ( !animateQ )
     requestAnimationFrame(drawFrame);
