@@ -65,60 +65,6 @@ void main()
 }
 </script>
 
-<!-- http://en.wikipedia.org/wiki/Linear_congruential_generator -->
-<script id="randX-frag-shader" type="x-shader/x-fragment">
-precision highp float;
-
-uniform sampler2D uMult;
-uniform sampler2D uRandX;
-varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
-
-uniform vec2 B;
-
-void main()
-{
-  vec4 X = vec4(B,B) * texture2D(uRandX, vCoord);
-  gl_FragColor = vec4(texture2D(uMult, X.xy).ra,
-                      texture2D(uMult, X.zw).ra);
-  // .ra since pixel format is LUMINANCE_ALPHA
-}
-</script>
-
-<!-- http://http.developer.nvidia.com/GPUGems3/gpugems3_ch37.html -->
-<script id="rand-frag-shader" type="x-shader/x-fragment">
-precision highp float;
-
-uniform sampler2D uRandX;
-uniform sampler2D uRand;
-varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
-
-uniform vec2  uOffset;
-uniform vec2  uOffset1;
-uniform vec2  uOffset2;
-uniform float Lx;
-uniform float Ly;
-uniform vec2  B;
-
-void main()
-{
-  float   dx = 1./Lx;
-  vec2    dX = vec2(dx, 1./Ly);
-  
-  vec2     X = vCoord;
-  vec2    bX = floor((X-.5*dX) * B) / B;
-  bool evenQ = mod(X.x*Lx, 2.) < 1.;
-  vec2    X0 = X;
-  if (!evenQ)
-    X0   = uOffset + bX+texture2D(uRandX, X).zw;
-  vec2 bX0 = floor((X0-.5*dX) * B) / B;
-  vec4 r1  = texture2D( uRand, uOffset1 + bX0+texture2D(uRandX, X0              ).xy );
-  vec4 r2  = texture2D( uRand, uOffset2 + bX0+texture2D(uRandX, X0 + vec2(dx,0.)).xy );
-  r1 = r1.wxzy * vec4(-1., 1.,-1.,-1.);
-  r2 = r2.zwyx * vec4( 1.,-1.,-1., 1.);
-  gl_FragColor = (evenQ ? r1+r2 : r1-r2)/sqrt(2.);
-}
-</script>
-
 <script id="fast-rand-frag-shader" type="x-shader/x-fragment">
 precision highp float;
 
@@ -465,14 +411,12 @@ function resetTextureL(texture, tex0, n, Lx, Ly)
 function resetTexture(texture, tex0, n)
 { resetTextureL(texture, tex0, n, Lx, Ly); }
 
-var randX0, rand0, Psi0;
+var rand0, Psi0;
 function resetTextures(n)
 {
   resetPsiTexture(n);
   
-  if ( !fastRand )
-    resetTexture(randXTexs[n], randX0, 4);
-  resetTexture  ( randTexs[n],  rand0, 4);
+  resetTexture(randTexs[n], rand0, 4);
 }
 
 var uploadedImage, uploadedPsi;
@@ -576,17 +520,8 @@ function updateWindowSize()
   var rN  = rLx*rLy;
   var  N  =  Lx* Ly;
   
-  if ( !fastRand ) {
-    gl.useProgram(progs.randX);
-    gl.uniform2f( getLoc(progs.randX, "B" ), Lx/rLx, Ly/rLy );
-  }
   gl.useProgram(progs.rand);
   gl.uniform1f( getLoc(progs.rand , "Lx"), Lx );
-  if ( !fastRand )
-  {
-    gl.uniform1f( getLoc(progs.rand , "Ly"), Ly );
-    gl.uniform2f( getLoc(progs.rand , "B" ), Lx/rLx, Ly/rLy );
-  }
   gl.useProgram(progs.comp);
   gl.uniform2f( getLoc(progs.comp , "DX"), 1/Lx, 1/Ly );
   gl.useProgram(null);
@@ -610,24 +545,6 @@ function updateWindowSize()
   for (var i=0; i<4*N; ++i)
     rand0[i] = (rand0[i] - mean)/stdev;
   
-  if ( !fastRand )
-  {
-    // find an "a" with a long period
-    var a = 4*Math.round(rN/(4*Math.E)) - 3; // assumes rN is a power of 2
-    var n;
-    do
-    {
-      a += 4;
-      var A = a;
-      var n = 1;
-      do { A = (a*A)%rN; ++n; } while (A !== 1);
-    }
-    while (4*n < rN);
-    
-    var c = Math.round( rN*(Math.sqrt(5)-1)/2 );
-    while ( !coprimeQ(rN, c) ) { --c; }
-  }
-  
   function newRandInts(n)
   {
     var RX = new Int32Array(n);
@@ -649,32 +566,6 @@ function updateWindowSize()
     xys[k+1] = (Math.floor(n/rLx)+0.5)/Ly;
   }
   
-  if ( !fastRand )
-  {
-    randX0  = new Float32Array(4*N);
-    for (var X=0; X<Lx/rLx; ++X)
-    for (var Y=0; Y<Ly/rLy; ++Y)
-    {
-      var RX1a = newRandInts(rN/2);
-      var RX1b = newRandInts(rN/2);
-      var RX2  = newRandInts(rN/2);
-      
-      for (var x=0; x<rLx; ++x)
-      for (var y=0; y<rLy; ++y)
-      {
-        var xy =  y*rLx + x;
-        var XY = (Y*rLy + y)*Lx + (X*rLx + x);
-        setXY( randX0, 4*XY+0, 2*(x%2==0 ? RX1a : RX1b)[Math.floor(xy/2)] );
-        setXY( randX0, 4*XY+2, x%2 === 0 ? NaN : 2*RX2[(xy-1)/2] );
-      }
-    }
-    
-    var mult0 = new Float32Array(2*rN);
-    for (var i=0; i<rN; ++i)
-      setXY(mult0, 2*i, (a*i+c)%rN);
-    
-    resetTextureL(multTex, mult0, 2, rLx, rLy);
-  }
   resetTextures(0);
   resetTextures(1);
   if (readTex)
@@ -686,7 +577,7 @@ var Lx, Ly;
 var progs = {};
 
 var canvas, gl;
-var multTex, randXTexs=[], randXFBOs=[], randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
+var multTex, randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
 
 var comp_mouseIsDownLoc, comp_mousePosLoc;
 
@@ -758,9 +649,7 @@ function main()
     return prog;
   }
   
-  if ( !fastRand )
-    progs.randX = makeProgram("randX-frag-shader");
-  progs.rand    = makeProgram(fastRand ? "fast-rand-frag-shader" : "rand-frag-shader");
+  progs.rand    = makeProgram("fast-rand-frag-shader");
   progs.comp    = makeProgram( "comp-frag-shader");
   progs.show    = makeProgram( "show-frag-shader");
   if (useRead)
@@ -804,8 +693,6 @@ function main()
   
   multTex = makeTexture();
   for (var texNum=0; texNum<2; ++texNum) {
-    if ( !fastRand )
-      randXTexs.push(makeTexture());
     randTexs   .push(makeTexture());
     PsiTexs    .push(makeTexture());
   }
@@ -868,32 +755,25 @@ function main()
     setParamFromSlider(params[i]);
   setStepsFromSlider();
   
-  if ( !fastRand )
-  {randX_uMultLoc       = getLoc(progs.randX, "uMult");
-   randX_uRandXLoc      = getLoc(progs.randX, "uRandX");}
-    rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
-    rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
-    rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
-  if ( !fastRand )
-  {rand_uRandXLoc      = getLoc(progs.rand , "uRandX");}
-   rand_uRandLoc       = getLoc(progs.rand , "uRand");
-   comp_uRandLoc       = getLoc(progs.comp , "uRand");
-   comp_uPsiLoc        = getLoc(progs.comp , "uPsi");
-   comp_mouseIsDownLoc = getLoc(progs.comp , "mouseIsDown");
-   comp_mousePosLoc    = getLoc(progs.comp , "mousePos");
-   show_uPsiLoc        = getLoc(progs.show , "uPsi");
-   show_uColorTexLoc   = getLoc(progs.show , "uColorTex");
-   tran_uImageLoc      = getLoc(progs.show , "uImage");
+  rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
+  rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
+  rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
+  rand_uRandLoc       = getLoc(progs.rand , "uRand");
+  comp_uRandLoc       = getLoc(progs.comp , "uRand");
+  comp_uPsiLoc        = getLoc(progs.comp , "uPsi");
+  comp_mouseIsDownLoc = getLoc(progs.comp , "mouseIsDown");
+  comp_mousePosLoc    = getLoc(progs.comp , "mousePos");
+  show_uPsiLoc        = getLoc(progs.show , "uPsi");
+  show_uColorTexLoc   = getLoc(progs.show , "uColorTex");
+  tran_uImageLoc      = getLoc(progs.show , "uImage");
   
   updateWindowSize();
   
   // ----------------------------------------------------------------------
   
   for (var texNum=0; texNum<2; ++texNum) {
-    if ( !fastRand )
-      randXFBOs.push(makeFBO(randXTexs[texNum]));
-    randFBOs   .push(makeFBO( randTexs[texNum]));
-    PsiFBOs    .push(makeFBO(  PsiTexs[texNum]));
+    randFBOs.push(makeFBO( randTexs[texNum]));
+    PsiFBOs .push(makeFBO(  PsiTexs[texNum]));
   }
   if (useRead)
     readFBO = makeFBO(readTex);
@@ -924,9 +804,8 @@ function main()
 }
 
 var rand_uOffsetLoc, rand_uOffset1Loc, rand_uOffset2Loc;
-var randX_uMultLoc , rand_uRandXLoc, comp_uRandLoc, show_uPsiLoc,      tran_uImageLoc,
-    randX_uRandXLoc, rand_uRandLoc , comp_uPsiLoc , show_uColorTexLoc;
-var randNum = 0;
+var comp_uRandLoc, show_uPsiLoc, tran_uImageLoc,
+    rand_uRandLoc, comp_uPsiLoc, show_uColorTexLoc;
 function setTex(n, tex, loc)
 {
   gl.activeTexture(gl.TEXTURE0+n);
@@ -937,27 +816,13 @@ function update()
 {
   if (getParam("T") > 0)
   {
-    if ( !fastRand )
-    {
-      gl.useProgram(progs.randX);
-      setTex(0,  multTex    , randX_uMultLoc );
-      setTex(1, randXTexs[0], randX_uRandXLoc);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, randXFBOs[1]);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      rotate(randXTexs);
-      rotate(randXFBOs);
-    }
-    
     gl.useProgram(progs.rand);
-    randNum = fastRand ? 1 : (randNum+1)%2;
-    gl.uniform2f(rand_uOffsetLoc , (Math.floor(Math.random()*(Lx/2))*2+randNum)/Lx,
+    gl.uniform2f(rand_uOffsetLoc , (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
     gl.uniform2f(rand_uOffset1Loc,  Math.floor(Math.random()*(Lx/2))*2   /Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
     gl.uniform2f(rand_uOffset2Loc, (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
-    if ( !fastRand )
-      setTex(0, randXTexs[0], rand_uRandXLoc);
     setTex  (1,  randTexs[0], rand_uRandLoc );
     gl.bindFramebuffer(gl.FRAMEBUFFER, randFBOs[1]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1148,7 +1013,6 @@ function check_randTexs()
 
 // var defaultL = urlParam("L", Math.max(128, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
 var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
-var fastRand = true;
 var showAlerts = true;
 
 function reportError(err)
