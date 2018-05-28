@@ -1167,9 +1167,10 @@ function reportError(err)
 
 <style>
 h1 { text-align: center; }
+aside { text-align: center; }
 #main {
   max-width: 1000px;
-  margin: 0 auto; 
+  margin: 0 auto;
 }
 #simulation {
   text-align: center;
@@ -1185,14 +1186,24 @@ h1 { text-align: center; }
   text-align: right;
   margin-left: 0.5%;
 }
+#abstractText {
+  display: inline-block;
+  vertical-align: top;
+  min-width: 400px;
+  width: 76%;
+}
+#pair {
+  display: inline-block;
+  vertical-align: top;
+  width: 23%;
+  margin-left: 0.5%;
+/*   width: 219; */
+}
 </style>
 </head>
 
 
 <body onload="main()">
-
-<!-- <h1> What is an electron made of?</h1> -->
-<!--   <aside>Is it elementary, or is it composite? </aside> -->
 
 <noscript id="noscript">
 <font size="7" color="red">ERROR</font>
@@ -1250,6 +1261,48 @@ steps: <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        m
 
 <article id="main">
 
+<!--
+<h1> What is an electron made of? </h1>
+<aside> Is it elementary, or is it composite? </aside>
+
+<h2> Abstract </h2>
+
+<article id="abstract">
+<div id="abstractText">
+In this website, we review how particles similar to electrons and positrons can emerge in the so-called XY model.
+We view the XY model as such: a color value will be assigned to every point in space
+  with an energy cost which prefers neighboring colors to be similar.
+We will see that vortex and anti-vortex defects (Fig 1) can form.
+An isolated vortex cannot be destroyed;
+  it can only be annihilated if it comes in contact with an anti-vortex.
+This is similar to electrons, which can only be annihilated by anti-particle: the positron.
+Furthermore, similar to electrons which experience a long-range repulsive force and electron-positron pairs which are attracted to each other,
+  vortices also experience a long-range repulsive force while vortex and anti-vortex pairs are attracted.
+The force acting on electrons is called the electromagnetic force,
+  which can propagate energy in the form of light or electromagnetic radiation.
+The same is true for the XY model,
+  where energy is propagated in the form of color waves which can be seen when a vortex and anti-vortex annihilates.
+The fact that electron-like particles can emerge from this simple model has profound implications on the possible origin of electrons and everything else in our universe.
+</div>
+
+<section id="pair">
+<img src="pair.png" width=100%><br>
+Fig 1. A vortex and anti-vortex.
+</section>
+</article>
+
+<h2> Introduction </h2>
+
+In the early 1800s John Dalton theorized that matter was composed "atoms"
+<a href="https://en.wikipedia.org/wiki/John_Dalton#Atomic_theory">[1]</a>
+in order to explain why chemical compounds are composed of elements in fixed ratios
+<a href="https://en.wikipedia.org/wiki/Law_of_multiple_proportions">[2]</a>.
+For nearly a century, atoms appeared to be invisible until J. J. Thomson managed to 
+<a href="https://en.wikipedia.org/wiki/Atomic_theory">[3]</a>
+
+<br>
+-->
+
 <ul>
   <li> dx: spatial discretization of the field theory (effectively just rescales Ɣ and g)</li>
   <li> T: temperature of the bath</li>
@@ -1276,9 +1329,8 @@ Lighter colors indicate that the magnitude of the spin vector is less than 1, wh
 <br>
 <br>
 
-</div>
-
 the source: <a href="https://github.com/kjslag/XY">https://github.com/kjslag/XY</a>
 
+</article>
 </body>
 </html>
