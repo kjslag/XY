@@ -65,8 +65,8 @@ void main()
 }
 </script>
 
-<script id="fast-rand-frag-shader" type="x-shader/x-fragment">
-precision highp float;
+<script id="rand-frag-shader" type="x-shader/x-fragment">
+precision mediump float;
 
 uniform sampler2D uRand;
 varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
@@ -90,7 +90,7 @@ void main()
 </script>
 
 <script id="comp-frag-shader" type="x-shader/x-fragment">
-precision highp float;
+precision mediump float;
 
 uniform sampler2D uRand;
 uniform sampler2D uPsi;
@@ -649,12 +649,12 @@ function main()
     return prog;
   }
   
-  progs.rand    = makeProgram("fast-rand-frag-shader");
-  progs.comp    = makeProgram( "comp-frag-shader");
-  progs.show    = makeProgram( "show-frag-shader");
+  progs.rand    = makeProgram("rand-frag-shader");
+  progs.comp    = makeProgram("comp-frag-shader");
+  progs.show    = makeProgram("show-frag-shader");
   if (useRead)
-    progs.read  = makeProgram( "read-frag-shader");
-  progs.tran    = makeProgram( "tran-frag-shader");
+    progs.read  = makeProgram("read-frag-shader");
+  progs.tran    = makeProgram("tran-frag-shader");
   
   // setup textures ----------------------------------------------------------------------
   
