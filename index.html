@@ -269,23 +269,21 @@ function updateProgramParams(param, x)
   var dt = getParam("dt");
   var _gamma = getParam("gamma") * a;
   var T = getParam("T");
-  var gamma_or_dt = param == "gamma" || param == "dt";
-  if ( param == "a" || param == "T" || gamma_or_dt )
-  {
+  var gamma_or_a = param == "gamma" || param == "a";
+  if ( gamma_or_a || param == "T" || param == "dt" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, "xi0"), Math.sqrt(2*_gamma*T/dt));
-    if ( gamma_or_dt ) {
-      gl.uniform1f(gl.getUniformLocation(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
-      gl.uniform1f(gl.getUniformLocation(progs.comp, "num"),    1-0.5*_gamma*dt );
-    }
+  if ( gamma_or_a || param == "dt" ) {
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "num"),    1-0.5*_gamma*dt );
   }
-  if ( param != "a" && param != "T" && param != "gamma" ) {
-    if ( param == "g" )
-      gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), x*a*a);
-    else if ( param == "dt" )
-      gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
-    else
-      gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
-  }
+  if ( param == "g" || param == "a" )
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), getParam("a")*a*a);
+  
+  if ( param == "dt" )
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
+  else if ( param != "a" && param != "T" && param != "gamma" && param != "g" )
+    gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
+  
   gl.useProgram(null);
 }
 
