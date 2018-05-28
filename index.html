@@ -717,7 +717,7 @@ function checkFBO()
   }
 }
 
-var delay=0, nsteps=1, animateQ=true;
+var nsteps=1, animateQ=true;
 function anim()
 {
   if ( animateQ )
@@ -726,10 +726,7 @@ function anim()
       update();
     drawFrame();
     
-    if (delay === 0)
-      requestAnimationFrame(anim);
-    else
-      setTimeout("requestAnimationFrame(anim)", delay);
+    requestAnimationFrame(anim);
   }
 }
 
@@ -800,8 +797,6 @@ function updateFPS()
     }
   }
 }
-
-function setDelay(val) { delay = parseInt(val); }
 
 function getMousePos(event) {
   var rect = canvas.getBoundingClientRect();
@@ -930,7 +925,6 @@ Please see <a href="http://www.wikihow.com/Enable-JavaScript-on-Your-Computer">h
 <canvas id="canvas" width="1" height="1"></canvas><br>
 <button onclick="resetPsi()">randomize</button>
 <input type="button" onclick="run()" value="stop" size="1" id="runButton">
-<!-- delay:<input size="2" value="0" onchange="setDelay(this.value)"> <!-- in ms -->
 fps:<input size="2" id="framerate">
 <br>
 <!--other sizes:
