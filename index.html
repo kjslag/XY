@@ -647,7 +647,15 @@ function setTex(n, tex, loc)
   gl.bindTexture(gl.TEXTURE_2D, tex); // Bind the texture to texture unit n
   gl.uniform1i(loc, n);               // Tell the shader we bound the texture to texture unit n
 }
-function update()
+function unbindTex()
+{
+  gl.activeTexture(gl.TEXTURE0+0);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.activeTexture(gl.TEXTURE0+1);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.useProgram(null);
+}
+function calcTimeStep()
 {
   if (getParam("T") > 0)
   {
@@ -673,6 +681,7 @@ function update()
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   rotate(PsiTexs);
   rotate(PsiFBOs);
+  //unbindTex();
 }
 
 function drawFrame()
@@ -687,11 +696,7 @@ function drawFrame()
   if ( err != gl.NO_ERROR && showAlerts )
     reportError("GL error");
   
-  gl.activeTexture(gl.TEXTURE0+0);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.activeTexture(gl.TEXTURE0+1);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.useProgram(null);
+  //unbindTex();
   
   ++frames;
   ++totFrames;
@@ -722,9 +727,9 @@ function anim()
 {
   if ( animateQ )
   {
-    for (var count=0; count<nsteps; ++count)
-      update();
     drawFrame();
+    for (var count=0; count<nsteps; ++count)
+      calcTimeStep();
     
     requestAnimationFrame(anim);
   }
@@ -742,7 +747,7 @@ function anim()
         window.cancelAnimationFrame  = window[vendors[x]+'CancelAnimationFrame']
                                     || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
-
+    
     if (!window.requestAnimationFrame)
         window.requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
@@ -752,7 +757,7 @@ function anim()
             lastTime = currTime + timeToCall;
             return id;
         };
-
+    
     if (!window.cancelAnimationFrame)
         window.cancelAnimationFrame = function(id) {
             clearTimeout(id);
@@ -778,10 +783,28 @@ function resetPsi()
     requestAnimationFrame(drawFrame);
 }
 
-var frames=0, totFrames=0, lastTime=new Date().getTime(), doneAdjustingSteps=false;
+// performance.now polyfill
+// https://gist.github.com/paulirish/5438650
+// @license http://opensource.org/licenses/MIT
+// copyright Paul Irish 2015
+(function(){
+  if ("performance" in window == false)
+    window.performance = {};
+  Date.now = (Date.now || function () { return new Date().getTime(); });
+  if ("now" in window.performance == false){
+    var nowOffset = Date.now();
+    if (performance.timing && performance.timing.navigationStart)
+      nowOffset = performance.timing.navigationStart
+    window.performance.now = function now(){
+      return Date.now() - nowOffset;
+    }
+  }
+})();
+
+var frames=0, totFrames=0, lastTime=performance.now(), doneAdjustingSteps=false;
 function updateFPS()
 {
-  var time = new Date().getTime();
+  var time = performance.now();
   var fps = Math.round(1000*frames/(time - lastTime));
   setValue("framerate", fps);
   frames = 0;
@@ -845,6 +868,12 @@ function check_randTexs()
 // var defaultL = urlParam("L", Math.max(128, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
 var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
 var showAlerts = true;
+
+function printDebug(txt)
+{
+  document.getElementById('debugDIV').style.display = 'block';
+  document.getElementById('debugText').innerHTML = txt;
+}
 
 function reportError(err)
 {
@@ -953,6 +982,10 @@ steps: <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        m
 </article>
 
 <article id="main">
+
+<div id="debugDIV" style="display: none;">
+<p id="debugText"></p>
+</div>
 
 <!--
 <h1> What is an electron made of? </h1>
