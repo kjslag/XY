@@ -200,9 +200,6 @@ void main()
 <script type="text/javascript">
 "use strict";
 
-function getLoc(prog, name)
-{ return gl.getUniformLocation(prog, name); }
-
 function getValue(id)
 { return document.getElementById(id).value; }
 
@@ -215,15 +212,8 @@ function setValue(id, value)
 var param_cache = {};
 function getParamFromSlider(param)
 {
-//   var min = Number(document.getElementById(param).min);
   var x = getValue(param);
   x = x <= getMin(param) ? 0 : Math.pow(10, x);
-//   if ( x <= min )
-//     x = 0;
-//   else {
-//     var min10 = Math.pow(10, min);
-//     x = Math.round(Math.pow(10, x)/min10)*min10;
-//   }
   param_cache[param] = x;
   return x;
 }
@@ -242,32 +232,37 @@ function getParam(param)
   return x;
 }
 
-function setParamFromSlider(param)
-{
-  var x = getParamFromSlider(param);
-  updateParamInput(param);
-  setParam0(param, x);
-}
-
+// allow strange inputs like negative numbers for fun
 function updateParamInput(param)
 {
   var x = param_cache[param];
   var p = Math.min(4, Math.max(0, 1+Math.ceil(-Math.log(x)/Math.log(10))));
-  setValue (param+"_", Number(x.toFixed(p)) );
+  setValue(param+"_", Number(x.toFixed(p)) );
+}
+function updateParamSlider(param)
+{
+  var x = param_cache[param];
+  setValue(param, x <= 0 ? getMin(param) : Math.log(x)/Math.log(10)); // to prevent imaginary logs
 }
 
+function setParamFromSlider(param)
+{
+  var x = getParamFromSlider(param);
+  updateParamInput(param);
+  updateProgramParams(param, x);
+}
 function setParamFromInput(param)
 {
   var x = getParamFromInput(param);
   if ( isNaN(x) )
     updateParamInput(param);
   else {
-    setValue(param, x <= 0 ? getMin(param) : Math.log(x)/Math.log(10));
-    setParam0(param, x);
+    updateParamSlider(param);
+    updateProgramParams(param, x);
   }
 }
 
-function setParam0(param, x)
+function updateProgramParams(param, x)
 {
   gl.useProgram(progs.comp);
   var a = getParam("a");
@@ -277,44 +272,51 @@ function setParam0(param, x)
   var gamma_or_dt = param == "gamma" || param == "dt";
   if ( param == "a" || param == "T" || gamma_or_dt )
   {
-    gl.uniform1f(getLoc(progs.comp, "xi0"), Math.sqrt(2*_gamma*T/dt));
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "xi0"), Math.sqrt(2*_gamma*T/dt));
     if ( gamma_or_dt ) {
-      gl.uniform1f(getLoc(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
-      gl.uniform1f(getLoc(progs.comp, "num"),    1-0.5*_gamma*dt );
+      gl.uniform1f(gl.getUniformLocation(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
+      gl.uniform1f(gl.getUniformLocation(progs.comp, "num"),    1-0.5*_gamma*dt );
     }
   }
   if ( param != "a" && param != "T" && param != "gamma" ) {
     if ( param == "g" )
-      gl.uniform1f(getLoc(progs.comp, "_g"), x*a*a);
+      gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), x*a*a);
     else if ( param == "dt" )
-      gl.uniform1f(getLoc(progs.comp, "dt2"), x*x);
+      gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
     else
-      gl.uniform1f(getLoc(progs.comp, param), x);
+      gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
   }
   gl.useProgram(null);
 }
 
+function updateStepsSlider()
+{
+  setValue("nsteps", Math.log(nsteps) / Math.log(10));
+}
+
+function updateStepsInput()
+{
+  setValue("nsteps_", nsteps);
+}
 function setStepsFromSlider()
 {
   nsteps = Math.round(Math.pow(10, getValue("nsteps")));
-  setValue("nsteps_", nsteps);
+  updateStepsInput();
 }
-
 function setStepsFromInput()
 {
   var x = Math.ceil(Number(getValue("nsteps_")));
   if (!( isNaN(x) || x <= 0 )) {
     nsteps = x;
-    setValue("nsteps", Math.log(x) / Math.log(10));
+    updateStepsSlider();
   }
-  setValue("nsteps_", nsteps);
+  updateStepsInput();
 }
-
 function setSteps(steps)
 {
   nsteps = steps;
-  setValue("nsteps" , Math.log(steps) / Math.log(10));
-  setValue("nsteps_", steps);
+  updateStepsSlider();
+  updateStepsInput();
 }
 
 // utility
@@ -349,19 +351,6 @@ function randGauss()
   }
 }
 
-// true if 'a' and 'b' are coprime
-function coprimeQ(a, b)
-{
-  var t;
-  while (b !== 0)
-  {
-    t = b;
-    b = a%t;
-    a = t;
-  }
-  return a === 1;
-}
-
 //
 
 function resetTextureL(texture, tex0, n, Lx, Ly)
@@ -378,32 +367,9 @@ function resetTextureL(texture, tex0, n, Lx, Ly)
 function resetTexture(texture, tex0, n)
 { resetTextureL(texture, tex0, n, Lx, Ly); }
 
-var rand0, Psi0;
-function resetTextures(n)
+function randomPsi()
 {
-  resetPsiTexture(n);
-  
-  resetTexture(randTexs[n], rand0, 4);
-}
-
-function resetPsiTexture(n)
-{
-  randomizePsi0();
-  
-//   gl.bindTexture(gl.TEXTURE_2D, PsiTexs[n]);
-//   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-//   gl.bindTexture(gl.TEXTURE_2D, null);
-
-  resetTexture(PsiTexs[n], Psi0, 4);
-//   ev.dataTransfer.items[0].getAsString(function (s){document.getElementById('outText').innerHTML = s;});
-// https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
-
-}
-
-//
-
-function randomizePsi0()
-{
+  var Psi0 = new Float32Array(Lx*Ly*4);
   for (var y=0, i=0; y<Ly; y++)
     for (var x=0; x<Lx; x++) {
       var rx=randGauss(), ry=randGauss();
@@ -412,27 +378,24 @@ function randomizePsi0()
       Psi0[i++] = rx;
       Psi0[i++] = ry;
     }
+  return Psi0;
 }
 
-var rLx = 16;
-var rLy = rLx;
+//
+
 function updateWindowSize()
 {
   // should all be powers of 2
-  var rN  = rLx*rLy;
-  var  N  =  Lx* Ly;
+  var N = Lx*Ly;
   
   gl.useProgram(progs.rand);
-  gl.uniform1f( getLoc(progs.rand , "Lx"), Lx );
+  gl.uniform1f(gl.getUniformLocation(progs.rand, "Lx"), Lx);
   gl.useProgram(progs.comp);
-  gl.uniform2f( getLoc(progs.comp , "DX"), 1/Lx, 1/Ly );
+  gl.uniform2f(gl.getUniformLocation(progs.comp, "DX"), 1/Lx, 1/Ly);
   gl.useProgram(null);
   
-  Psi0 = new Float32Array(Lx*Ly*4);
-  
-  // random numbers:
-  
-  rand0 = new Float32Array(4*N);
+  // thermal randomness:
+  var rand0 = new Float32Array(4*N);
   for (var i=0; i<4*N; i++)
     rand0[i] = randGauss();
   var mean=0, stdev=0;
@@ -447,31 +410,19 @@ function updateWindowSize()
   for (var i=0; i<4*N; ++i)
     rand0[i] = (rand0[i] - mean)/stdev;
   
-  function newRandInts(n)
+  var psi0 = randomPsi();
+  for (var n=0; n<2; ++n)
   {
-    var RX = new Int32Array(n);
-    for (var i=0; i<n; ++i)
-      RX[i] = i;
-    for (var i=0; i<n; ++i)
-    {
-      var j = Math.floor(Math.random()*n);
-      var t = RX[i];
-      RX[i] = RX[j];
-      RX[j] = t;
-    }
-    return RX;
+    resetTexture( PsiTexs[n], psi0, 4);
+    resetTexture(randTexs[n], rand0, 4);
   }
-  
-  function setXY(xys, k, n)
-  {
-    xys[k+0] = (          (n%rLx)+0.5)/Lx;
-    xys[k+1] = (Math.floor(n/rLx)+0.5)/Ly;
-  }
-  
-  resetTextures(0);
-  resetTextures(1);
   if (readTex)
-    resetTexture(readTex, Psi0, 4);
+    resetTexture(readTex, null, 4);
+}
+
+function resetPsiTexture(n)
+{
+  resetTexture(PsiTexs[n], randomPsi(), 4);
 }
 
 var Lx, Ly;
@@ -479,9 +430,7 @@ var Lx, Ly;
 var progs = {};
 
 var canvas, gl;
-var multTex, randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
-
-var comp_mouseIsDownLoc, comp_mousePosLoc;
+var randTexs=[], randFBOs=[], PsiTexs=[], PsiFBOs=[], colorTex, readTex, readFBO;
 
 function main()
 {
@@ -499,19 +448,15 @@ function main()
   //gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   
   if ( !window.WebGLRenderingContext )
-  { noWebGL('Sorry, your browser does not seem to support WebGL! <br> Please see <a href="http://caniuse.com/#feat=webgl">http://caniuse.com/#feat=webgl</a> to see which browser versions support it.'); return; }
+    reportError('Sorry, your browser does not seem to support WebGL! <br> Please see <a href="http://caniuse.com/#feat=webgl">http://caniuse.com/#feat=webgl</a> to see which browsers support it.');
   
   try { gl = canvas.getContext("webgl"); } catch(e) {}
   if ( !gl ) try { gl = canvas.getContext("experimental-webgl"); } catch(e) {}
-  if ( !gl ) { reportError('Your browser does not seem to have WebGL enabled. <br> Please see <a href="https://superuser.com/a/836833">https://superuser.com/a/836833</a> for help on how to enable it.'); return; }
+  if ( !gl ) reportError('Your browser does not seem to have WebGL enabled. <br> Please see <a href="https://superuser.com/a/836833">https://superuser.com/a/836833</a> for help on how to enable it.');
   
   var ext;
   try { ext = gl.getExtension("OES_texture_float"); } catch(e) {}
-  if ( !ext ) { reportError("Sorry, your device does not support a necessary WebGL extension: OES_texture_float"); return; }
-  
-//   var ext2;
-//   try { ext2 = gl.getExtension("WEBGL_color_buffer_float"); } catch(e) {}
-//   if ( !ext2 ) { reportError(err +   "WEBGL_color_buffer_float extension"); return; }
+  if ( !ext ) reportError("Sorry, your device does not support a necessary WebGL extension: OES_texture_float");
   
   //alert(gl.getSupportedExtensions());
   
@@ -534,7 +479,7 @@ function main()
     gl.shaderSource(shader, src);
     gl.compileShader(shader);
     if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) )
-      alert( gl.getShaderInfoLog(shader) );
+      reportError( gl.getShaderInfoLog(shader) );
     
     return shader;
   }
@@ -547,7 +492,7 @@ function main()
     gl.attachShader(prog, getShader(shader_name) );
     gl.linkProgram(prog);
     if ( !gl.getProgramParameter(prog, gl.LINK_STATUS) )
-      alert("Could not link "+shader_name);
+      reportError("Could not link "+shader_name);
     return prog;
   }
   
@@ -592,10 +537,9 @@ function main()
     }
   }
   
-  multTex = makeTexture();
   for (var texNum=0; texNum<2; ++texNum) {
-    randTexs   .push(makeTexture());
-    PsiTexs    .push(makeTexture());
+    randTexs.push(makeTexture());
+    PsiTexs .push(makeTexture());
   }
   if (useRead)
     readTex = makeTexture();
@@ -656,24 +600,24 @@ function main()
     setParamFromSlider(params[i]);
   setStepsFromSlider();
   
-  rand_uOffset1Loc    = getLoc(progs.rand , "uOffset1");
-  rand_uOffset2Loc    = getLoc(progs.rand , "uOffset2");
-  rand_uOffsetLoc     = getLoc(progs.rand , "uOffset");
-  rand_uRandLoc       = getLoc(progs.rand , "uRand");
-  comp_uRandLoc       = getLoc(progs.comp , "uRand");
-  comp_uPsiLoc        = getLoc(progs.comp , "uPsi");
-  comp_mouseIsDownLoc = getLoc(progs.comp , "mouseIsDown");
-  comp_mousePosLoc    = getLoc(progs.comp , "mousePos");
-  show_uPsiLoc        = getLoc(progs.show , "uPsi");
-  show_uColorTexLoc   = getLoc(progs.show , "uColorTex");
+  rand_uOffset1Loc    = gl.getUniformLocation(progs.rand , "uOffset1");
+  rand_uOffset2Loc    = gl.getUniformLocation(progs.rand , "uOffset2");
+  rand_uOffsetLoc     = gl.getUniformLocation(progs.rand , "uOffset");
+  rand_uRandLoc       = gl.getUniformLocation(progs.rand , "uRand");
+  comp_uRandLoc       = gl.getUniformLocation(progs.comp , "uRand");
+  comp_uPsiLoc        = gl.getUniformLocation(progs.comp , "uPsi");
+  comp_mouseIsDownLoc = gl.getUniformLocation(progs.comp , "mouseIsDown");
+  comp_mousePosLoc    = gl.getUniformLocation(progs.comp , "mousePos");
+  show_uPsiLoc        = gl.getUniformLocation(progs.show , "uPsi");
+  show_uColorTexLoc   = gl.getUniformLocation(progs.show , "uColorTex");
   
   updateWindowSize();
   
   // ----------------------------------------------------------------------
   
   for (var texNum=0; texNum<2; ++texNum) {
-    randFBOs.push(makeFBO( randTexs[texNum]));
-    PsiFBOs .push(makeFBO(  PsiTexs[texNum]));
+    randFBOs.push(makeFBO(randTexs[texNum]));
+    PsiFBOs .push(makeFBO( PsiTexs[texNum]));
   }
   if (useRead)
     readFBO = makeFBO(readTex);
@@ -706,6 +650,7 @@ function main()
 var rand_uOffsetLoc, rand_uOffset1Loc, rand_uOffset2Loc;
 var comp_uRandLoc, show_uPsiLoc,
     rand_uRandLoc, comp_uPsiLoc, show_uColorTexLoc;
+var comp_mouseIsDownLoc, comp_mousePosLoc;
 function setTex(n, tex, loc)
 {
   gl.activeTexture(gl.TEXTURE0+n);
@@ -723,7 +668,7 @@ function update()
                                     Math.floor(Math.random()* Ly   )     /Ly);
     gl.uniform2f(rand_uOffset2Loc, (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
-    setTex  (1,  randTexs[0], rand_uRandLoc );
+    setTex(1,  randTexs[0], rand_uRandLoc );
     gl.bindFramebuffer(gl.FRAMEBUFFER, randFBOs[1]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     rotate(randTexs);
@@ -751,7 +696,7 @@ function drawFrame()
   
   var err = gl.getError();
   if ( err != gl.NO_ERROR && showAlerts )
-    alert("GL error");
+    reportError("GL error");
   
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.useProgram(null);
@@ -764,19 +709,19 @@ function checkFBO()
 {
   var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if ( status != gl.FRAMEBUFFER_COMPLETE && showAlerts ) {
-    if      ( status == gl.INVALID_ENUM ) alert("GL_INVALID_ENUM");
-    else if ( status == gl.FRAMEBUFFER_UNDEFINED ) alert("GL_FRAMEBUFFER_UNDEFINED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) alert("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) alert("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
-    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("GL_FRAMEBUFFER_UNSUPPORTED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) alert("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) alert("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
-    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) alert("FRAMEBUFFER_UNSUPPORTED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) alert("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
+    if      ( status == gl.INVALID_ENUM ) reportError("GL_INVALID_ENUM");
+    else if ( status == gl.FRAMEBUFFER_UNDEFINED ) reportError("GL_FRAMEBUFFER_UNDEFINED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) reportError("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) reportError("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
+    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) reportError("GL_FRAMEBUFFER_UNSUPPORTED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) reportError("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) reportError("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) reportError("FRAMEBUFFER_UNSUPPORTED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
     else
-      alert(status);
+      reportError(status);
   }
 }
 
@@ -881,7 +826,7 @@ var useRead = false;
 function check_randTexs()
 {
   gl.useProgram(progs.read);
-  setTex( 0, randTexs[0], getLoc(progs.read, "uTex") );
+  setTex( 0, randTexs[0], gl.getUniformLocation(progs.read, "uTex") );
   gl.bindFramebuffer(gl.FRAMEBUFFER, readFBO);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   
@@ -919,6 +864,7 @@ function reportError(err)
 {
   document.getElementById('errDIV').style.display = 'block';
   document.getElementById('errorText').innerHTML = err;
+  throw new Error(err);
 }
 
 </script>
