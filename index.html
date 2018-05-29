@@ -7,7 +7,7 @@ r/place location:
 https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
 https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
-TODO on phone, the random numbers -> 0
+TODO make symplectic
 TODO mediump shaders don't work on phone
 TODO better color map
 
@@ -141,7 +141,7 @@ void main()
   vec2 psi4   = texture2D(uPsi, mod(X-dY,1.)).xy;
   vec2 psiOld = texture2D(uPsi,     X       ).zw;
   
-  vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi
+  vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi;
   if ( mouseIsDown ) {
     vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
@@ -419,6 +419,7 @@ function randomPsi()
 
 //
 
+var rand0;
 function updateWindowSize()
 {
   // should all be powers of 2
@@ -432,7 +433,7 @@ function updateWindowSize()
   gl.useProgram(null);
   
   // thermal randomness:
-  var rand0 = new Float32Array(4*N);
+  rand0 = new Float32Array(4*N);
   for (var i=0; i<4*N; i++)
     rand0[i] = randGauss();
   var mean=0, stdev=0;
@@ -450,16 +451,11 @@ function updateWindowSize()
   var psi0 = randomPsi();
   for (var n=0; n<2; ++n)
   {
-    resetTexture( PsiTexs[n], psi0, 4);
+    resetTexture( PsiTexs[n],  psi0, 4);
     resetTexture(randTexs[n], rand0, 4);
   }
   if (readTex)
     resetTexture(readTex, null, 4);
-}
-
-function resetPsiTexture(n)
-{
-  resetTexture(PsiTexs[n], randomPsi(), 4);
 }
 
 var Lx, Ly;
@@ -700,10 +696,20 @@ function unbindTex()
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.useProgram(null);
 }
+var totThermalSteps = 0;
 function doTimeStep()
 {
   if (getParam("T") > 0)
   {
+    if (totThermalSteps > 1000)
+    {
+      // randTexs -> 0 after ~ 6000 updates on my phone
+      resetTexture(randTexs[0], rand0, 4);
+      totThermalSteps = 1;
+    }
+    else
+      totThermalSteps += 1;
+    
     gl.useProgram(progs.rand);
     gl.uniform2f(rand_uOffsetLoc , (Math.floor(Math.random()*(Lx/2))*2+1)/Lx,
                                     Math.floor(Math.random()* Ly   )     /Ly);
@@ -844,7 +850,7 @@ function run()
 
 function resetPsi()
 {
-  resetPsiTexture(0);
+  resetTexture(PsiTexs[0], randomPsi(), 4);
   
   if ( !animateQ )
     requestAnimationFrame(drawFrame);
