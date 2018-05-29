@@ -91,7 +91,7 @@ void main()
 </script>
 
 <script id="comp-frag-shader" type="x-shader/x-fragment">
-precision highp float;
+precision mediump float;
 
 uniform sampler2D uRand;
 uniform sampler2D uPsi;
@@ -121,7 +121,7 @@ float sq(float x) { return x*x; }
 vec2 cross2(vec2 a) { return vec2(-a.y,a.x); }
 float det2(vec2 a, vec2 b) { return a.x*b.y - a.y*b.x; }
 
-float soften(float x) { if (x > 0.) return x; else return 1./(1./x - 1.);}
+float soften(float x) { if (x > 0.) return x; else return x/(1. - x);}
 
 void main()
 { // see XY sim.nb for formulas
@@ -988,7 +988,7 @@ steps/frame:
 
 <article id="main">
 
-2
+test3
 <div id="debugDIV" style="display: none;">
 <p id="debugText"></p>
 </div>
