@@ -7,6 +7,8 @@ r/place location:
 https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
 https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
+TODO on phone, the random numbers -> 0
+TODO mediump shaders don't work on phone
 TODO force radius
 TODO time step changing
 TODO dynamic size?
@@ -66,7 +68,7 @@ void main()
 </script>
 
 <script id="rand-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uRand;
 varying vec2 vCoord; // = (i+.5)/Lx, (j+.5)/Ly
@@ -91,7 +93,7 @@ void main()
 </script>
 
 <script id="comp-frag-shader" type="x-shader/x-fragment">
-precision mediump float;
+precision highp float;
 
 uniform sampler2D uRand;
 uniform sampler2D uPsi;
@@ -99,7 +101,6 @@ varying vec2 vCoord;
 
 uniform vec2 DX;
 
-// TODO
 // uniform float T;
 uniform float xi0; // sqrt(2.*_gamma*T/dt)
 // uniform float gamma;
@@ -121,7 +122,7 @@ float sq(float x) { return x*x; }
 vec2 cross2(vec2 a) { return vec2(-a.y,a.x); }
 float det2(vec2 a, vec2 b) { return a.x*b.y - a.y*b.x; }
 
-float soften(float x) { if (x > 0.) return x; else return x/(1. - x);}
+float soften(float x) { if (x >= 0.) return x; else return x/(1. - x);}
 
 void main()
 { // see XY sim.nb for formulas
@@ -988,7 +989,6 @@ steps/frame:
 
 <article id="main">
 
-test3
 <div id="debugDIV" style="display: none;">
 <p id="debugText"></p>
 </div>
