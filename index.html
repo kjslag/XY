@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <!--
-MIT License: Copyright 2017 Kevin Slagle
+MIT License: Copyright 2018 Kevin Slagle
 
 r/place location:
 https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
@@ -868,7 +868,9 @@ function resetPsi()
   }
 })();
 
-var frames=0, totFrames=0, lastTime=performance.now(), doneAdjustingSteps=false;
+var frames=0, totFrames=0, lastTime=performance.now(), adjustingSteps=0;
+function adjustSteps()
+{ adjustingSteps = 0; }
 function updateFPS()
 {
   var time = performance.now();
@@ -877,14 +879,23 @@ function updateFPS()
   frames = 0;
   lastTime = time;
   
-  if ( totFrames > 60 && !doneAdjustingSteps ) {
-    doneAdjustingSteps = fps < 40;
+  if ( adjustingSteps < 2 && totFrames > 30 ) {
+    if ( adjustingSteps==0 && fps < 40 )
+      adjustingSteps = 1;
+    
     if ( animateQ ) {
-      if ( doneAdjustingSteps )
-        setSteps(Math.ceil(Math.max(nsteps/2,nsteps*fps/70)));
-      else
-        setSteps(Math.ceil(nsteps*2));
+      if ( adjustingSteps == 0 )
+        setSteps(Math.ceil(nsteps*4));
+      else {
+        var newN = Math.ceil(Math.max(nsteps/4, nsteps*fps/60));
+        if ( newN >= nsteps )
+          adjustingSteps = 2;
+        else
+          setSteps(newN);
+      }
     }
+    else
+      adjustingSteps = 2;
   }
 }
 
@@ -1055,7 +1066,7 @@ force radius:
 time step:
   <input type="range" id="dt"      onchange='setParamFromSlider("dt"    )' min="-3" max="0"   step="0.01" value="-1">
   <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"    )'><br>  <!--time step-->
-steps/frame:
+<input type="button" onclick="adjustSteps()" value="steps/frame" size="1">:
   <input type="range" id="nsteps"  onchange='setStepsFromSlider()'         min= "0" max="2.5" step="0.01" value= "0">
   <input size="2"     id="nsteps_" onchange='setStepsFromInput ()'><br> <!--# of time steps per frame-->
 </div>
