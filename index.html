@@ -110,6 +110,7 @@ uniform float F;
 uniform float den; // 1/(1.+.5*_gamma*dt)
 uniform float num; //    1.-.5*_gamma*dt
 
+uniform bool  vortexForceQ;
 uniform bool  mouseIsDown;
 uniform vec2  mousePos;
 uniform float forceR;
@@ -152,8 +153,10 @@ void main()
       vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
       vec2 dPsi    = vec2( det2(dir, psi1234.xz),
                            det2(dir, psi1234.yw) )*r;
-      F0+= -F*sq(1.-r) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
-      //F0+= normalize(dist) * sq(1. - sq(r2));
+      if (vortexForceQ)
+        F0 += normalize(dist) * sq(1. - sq(r2));
+      else
+        F0 += -F*sq(1.-r) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
     }
   }
   if ( xi0 > 0. )
@@ -417,7 +420,7 @@ function updateWindowSize()
   gl.useProgram(progs.comp);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "DX"), 1/Lx, 1/Ly);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "LX"), Lx, Ly);
-  gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), Lx/4);
+  gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), Lx/3);
   gl.useProgram(null);
   
   // thermal randomness:
@@ -452,6 +455,8 @@ function resetPsiTexture(n)
 }
 
 var Lx, Ly;
+// var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
+var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
 
 var progs = {};
 
@@ -601,6 +606,7 @@ function main()
   for (var i=0; i<params.length; ++i)
     setParamFromSlider(params[i]);
   setStepsFromSlider();
+  updateForceType();
   
   rand_uOffset1Loc    = gl.getUniformLocation(progs.rand , "uOffset1");
   rand_uOffset2Loc    = gl.getUniformLocation(progs.rand , "uOffset2");
@@ -646,21 +652,21 @@ function main()
   
   function updatePointerPos(p) {
     var rect = canvas.getBoundingClientRect();
-    var px   = event.clientX - rect.left;
-    var py   = event.clientY - rect.top;
+    var px   = p.clientX - rect.left;
+    var py   = p.clientY - rect.top;
     gl.useProgram(progs.comp);
     gl.uniform2f(comp_mousePosLoc, px, canvas.height-py);
     gl.useProgram(null);
   }
   
-  function updateTouchPos(e) { updatePointerPos(e.touches[0]); }
+  function updateTouchPos(e) { updatePointerPos(e.changedTouches[0]); }
   
-  canvas.addEventListener("mousedown" , function(e){updatePointerPos(e); updateDown(true ); }, false);
-  canvas.addEventListener("mouseup"   , function(e){                     updateDown(false); }, false);
-  canvas.addEventListener("mousemove" , function(e){updatePointerPos(e);                    }, false);
-  canvas.addEventListener("touchstart", function(e){                     updateDown(true ); }, false);
-  canvas.addEventListener("touchend"  , function(e){                     updateDown(false); }, false);
-  canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);   e.preventDefault();}, false);
+  canvas.addEventListener("mousedown"  , function(e){updatePointerPos(e); updateDown(true ); }, false);
+  canvas.addEventListener("mouseup"    , function(e){                     updateDown(false); }, false);
+  canvas.addEventListener("mousemove"  , function(e){updatePointerPos(e);                    }, false);
+  canvas.addEventListener("touchstart" , function(e){;updateTouchPos(e);  updateDown(true ); }, false);
+  canvas.addEventListener("touchend"   , function(e){                     updateDown(false); }, false);
+  canvas.addEventListener("touchmove"  , function(e){updateTouchPos(e);   e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
   stopPsi = false;
@@ -910,8 +916,22 @@ function check_randTexs()
     alert(tex[i]);
 }
 
-// var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
-var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
+var vortexForceQ = true;
+function toggleForceType()
+{
+  vortexForceQ = ! vortexForceQ;
+  updateForceType();
+}
+function updateForceType()
+{
+  gl.useProgram(progs.comp);
+  gl.uniform1i(gl.getUniformLocation(progs.comp, "vortexForceQ"), vortexForceQ);
+  gl.useProgram(null);
+  if (vortexForceQ)
+    setValue('forceButton', 'vortex strength');
+  else
+    setValue('forceButton', 'force strength');
+}
 
 function printDebug(txt)
 {
@@ -1018,7 +1038,7 @@ thermal coupling: <!--Ɣ-->
 temperature:
   <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
   <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
-force strength: <!--F-->
+<input type="button" onclick="toggleForceType()" size="1" id="forceButton">: <!--F-->
   <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-1" max="2"   step="0.01" value= "1">
   <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
 time step:
@@ -1040,7 +1060,7 @@ steps/frame:
   <li> stiffness: energy cost for a spin to not be a unit vector</li>
   <li> thermal coupling: coupling strength to thermal bath at temperature T</li>
   <li> temperature: temperature of the bath</li>
-  <li> force strength: strength of vortex attractive force when mouse clicking on the system</li>
+  <li> vortex/force strength: strength of vortex attractive force when mouse clicking on the system</li>
   <li> time step: increase to increase simulation speed at the expense of accuracy</li>
   <li> steps/frame: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation speed if fps is already maxed out at 60fps)</li>
 </ul>
