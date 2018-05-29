@@ -9,9 +9,6 @@ https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
 TODO on phone, the random numbers -> 0
 TODO mediump shaders don't work on phone
-TODO force radius
-TODO time step changing
-TODO dynamic size?
 TODO better color map
 
 ---------------------------------------
@@ -67,6 +64,7 @@ void main()
 }
 </script>
 
+<!-- update random numbers -->
 <script id="rand-frag-shader" type="x-shader/x-fragment">
 precision highp float;
 
@@ -92,6 +90,7 @@ void main()
 }
 </script>
 
+<!-- update spins -->
 <script id="comp-frag-shader" type="x-shader/x-fragment">
 precision highp float;
 
@@ -166,6 +165,22 @@ void main()
 }
 </script>
 
+<!-- set velocity of spins to zero -->
+<script id="stop-frag-shader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D uPsi;
+varying vec2 vCoord;
+
+void main()
+{
+  vec2 X   = vCoord;
+  vec2 psi = texture2D(uPsi, X).xy;
+  gl_FragColor = vec4(psi, psi);
+}
+</script>
+
+<!-- show colors -->
 <script id="show-frag-shader" type="x-shader/x-fragment">
 precision mediump float;
 
@@ -185,6 +200,7 @@ void main()
 }
 </script>
 
+<!-- used for debugging -->
 <script id="read-frag-shader" type="x-shader/x-fragment">
 precision highp float;
 
@@ -269,6 +285,7 @@ function setParamFromInput(param)
   }
 }
 
+var stopPsi = false; // set to true when time step changes to freeze spins for computation simplicity
 function updateProgramParams(param, x)
 {
   gl.useProgram(progs.comp);
@@ -286,7 +303,10 @@ function updateProgramParams(param, x)
     gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), getParam("g"));
   
   if ( param == "dt" )
+  {
     gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
+    stopPsi = true;
+  }
   else if ( param != "T" && param != "gamma" && param != "g" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
   
@@ -504,6 +524,7 @@ function main()
   
   progs.rand    = makeProgram("rand-frag-shader");
   progs.comp    = makeProgram("comp-frag-shader");
+  progs.stop    = makeProgram("stop-frag-shader");
   progs.show    = makeProgram("show-frag-shader");
   if (useRead)
     progs.read  = makeProgram("read-frag-shader");
@@ -642,6 +663,7 @@ function main()
   canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);   e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
+  stopPsi = false;
   anim();
 }
 
@@ -664,7 +686,7 @@ function unbindTex()
   gl.bindTexture(gl.TEXTURE_2D, null);
   gl.useProgram(null);
 }
-function calcTimeStep()
+function doTimeStep()
 {
   if (getParam("T") > 0)
   {
@@ -682,14 +704,26 @@ function calcTimeStep()
     rotate(randFBOs);
   }
   
-  gl.useProgram(progs.comp);
+  if (stopPsi)
+  {
+    gl.useProgram(progs.stop);
+    setTex(0, PsiTexs[0], gl.getUniformLocation(progs.stop, "uPsi"));
+    gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    rotate(PsiTexs);
+    rotate(PsiFBOs);
+    stopPsi = false;
+    return;
+  }
   
+  gl.useProgram(progs.comp);
   setTex(0, randTexs[0], comp_uRandLoc);
   setTex(1,  PsiTexs[0], comp_uPsiLoc );
   gl.bindFramebuffer(gl.FRAMEBUFFER, PsiFBOs[1]);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   rotate(PsiTexs);
   rotate(PsiFBOs);
+  
   //unbindTex();
 }
 
@@ -700,32 +734,42 @@ function drawFrame()
   setTex(1, colorTex    , show_uColorTexLoc);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  
-  var err = gl.getError();
-  if ( err != gl.NO_ERROR && showAlerts )
-    reportError("GL error");
-  
   //unbindTex();
+  
+  checkGL();
   
   ++frames;
   ++totFrames;
 }
 
+function checkGL(str='')
+{
+  var err = gl.getError();
+  if ( err != gl.NO_ERROR ) {
+    if      ( err == gl.INVALID_ENUM                  ) reportError(str+"INVALID_ENUM");
+    else if ( err == gl.INVALID_VALUE                 ) reportError(str+"INVALID_VALUE");
+    else if ( err == gl.INVALID_OPERATION             ) reportError(str+"INVALID_OPERATION");
+    else if ( err == gl.INVALID_FRAMEBUFFER_OPERATION ) reportError(str+"INVALID_FRAMEBUFFER_OPERATION");
+    else if ( err == gl.OUT_OF_MEMORY                 ) reportError(str+"OUT_OF_MEMORY");
+    else if ( err == gl.CONTEXT_LOST_WEBGL            ) reportError(str+"CONTEXT_LOST_WEBGL");
+  }
+}
+
 function checkFBO()
 {
   var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if ( status != gl.FRAMEBUFFER_COMPLETE && showAlerts ) {
-    if      ( status == gl.INVALID_ENUM ) reportError("GL_INVALID_ENUM");
-    else if ( status == gl.FRAMEBUFFER_UNDEFINED ) reportError("GL_FRAMEBUFFER_UNDEFINED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER ) reportError("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER ) reportError("GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
-    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) reportError("GL_FRAMEBUFFER_UNSUPPORTED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE ) reportError("GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS ) reportError("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
-    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED ) reportError("FRAMEBUFFER_UNSUPPORTED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT ) reportError("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
+  if ( status != gl.FRAMEBUFFER_COMPLETE ) {
+    if      ( status == gl.INVALID_ENUM                              ) reportError("INVALID_ENUM");
+    else if ( status == gl.FRAMEBUFFER_UNDEFINED                     ) reportError("FRAMEBUFFER_UNDEFINED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT         ) reportError("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) reportError("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER        ) reportError("FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER        ) reportError("FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
+    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED                   ) reportError("FRAMEBUFFER_UNSUPPORTED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE        ) reportError("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS      ) reportError("FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+    else if ( status == gl.FRAMEBUFFER_UNSUPPORTED                   ) reportError("FRAMEBUFFER_UNSUPPORTED");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT     ) reportError("FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
     else
       reportError(status);
   }
@@ -738,7 +782,7 @@ function anim()
   {
     drawFrame();
     for (var count=0; count<nsteps; ++count)
-      calcTimeStep();
+      doTimeStep();
     
     requestAnimationFrame(anim);
   }
@@ -868,7 +912,6 @@ function check_randTexs()
 
 // var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
 var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
-var showAlerts = true;
 
 function printDebug(txt)
 {
