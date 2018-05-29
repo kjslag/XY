@@ -146,17 +146,24 @@ void main()
     float R2    = sq(forceR);
     vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
-    if ( dist2 < R2 ) {
+    if (4.*dist2 < LX.x*LX.x)
+    {
       float r2     = dist2/R2;
       float r      = sqrt(r2);
       vec2 dir     = normalize(dist);
-      vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
-      vec2 dPsi    = vec2( det2(dir, psi1234.xz),
-                           det2(dir, psi1234.yw) )*r;
+      float decay  = exp(-4.*r) * (1. - (2.*forceR/LX.x)*r);
       if (vortexForceQ)
-        F0 += normalize(dist) * sq(1. - sq(r2));
+      {
+        float f = F*decay;
+        F0 += vec2(f,-f) * dir; // vec2(f,-f) chosen to match the icon
+      }
       else
-        F0 += -F*sq(1.-r) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
+      {
+        vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
+        vec2 dPsi    = vec2( det2(dir, psi1234.xz),
+                             det2(dir, psi1234.yw) )*r;
+        F0 += (-10.*F*decay) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
+      }
     }
   }
   if ( xi0 > 0. )
@@ -1039,7 +1046,7 @@ temperature:
   <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
   <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
 <input type="button" onclick="toggleForceType()" size="1" id="forceButton">: <!--F-->
-  <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-1" max="2"   step="0.01" value= "1">
+  <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-2" max="2"   step="0.01" value= "0">
   <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
 time step:
   <input type="range" id="dt"      onchange='setParamFromSlider("dt"   )' min="-3" max="0"   step="0.01" value="-1">
