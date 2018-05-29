@@ -437,17 +437,6 @@ function updateWindowSize()
   rand0 = new Float32Array(4*N);
   for (var i=0; i<4*N; i++)
     rand0[i] = randGauss();
-  var mean=0, stdev=0;
-  for (var i=0; i<4*N; ++i)
-  {
-    var x = rand0[i];
-    mean  += x;
-    stdev += x*x;
-  }
-  mean /= 4*N;
-  stdev = Math.sqrt(stdev/(4*N) - mean*mean);
-  for (var i=0; i<4*N; ++i)
-    rand0[i] = (rand0[i] - mean)/stdev;
   
   var psi0 = randomPsi();
   for (var n=0; n<2; ++n)
