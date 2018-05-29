@@ -623,20 +623,23 @@ function main()
     gl.useProgram(null);
   }
   
-  function updatePos(p) {
+  function updatePointerPos(p) {
+    var rect = canvas.getBoundingClientRect();
+    var px   = event.clientX - rect.left;
+    var py   = event.clientY - rect.top;
     gl.useProgram(progs.comp);
-    gl.uniform2f(comp_mousePosLoc, p.x, canvas.height-p.y);
+    gl.uniform2f(comp_mousePosLoc, px, canvas.height-py);
     gl.useProgram(null);
   }
   
-  function updateTouchPos(e) { updatePos({x:e.touches[0].clientX,y:e.touches[0].clientY}); }
+  function updateTouchPos(e) { updatePointerPos(e.touches[0]); }
   
-  canvas.addEventListener("mousedown" , function(e){updatePos(getMousePos(e)); updateDown(true );}, false);
-  canvas.addEventListener("mouseup"   , function(e){                           updateDown(false);}, false);
-  canvas.addEventListener("mousemove" , function(e){updatePos(getMousePos(e));                   }, false);
-  canvas.addEventListener("touchstart", function(e){                           updateDown(true );}, false);
-  canvas.addEventListener("touchend"  , function(e){updateTouchPos(e);         updateDown(false);}, false);
-  canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);        e.preventDefault();}, false);
+  canvas.addEventListener("mousedown" , function(e){updatePointerPos(e); updateDown(true ); }, false);
+  canvas.addEventListener("mouseup"   , function(e){                     updateDown(false); }, false);
+  canvas.addEventListener("mousemove" , function(e){updatePointerPos(e);                    }, false);
+  canvas.addEventListener("touchstart", function(e){updateTouchPos(e);   updateDown(true ); }, false);
+  canvas.addEventListener("touchend"  , function(e){updateTouchPos(e);   updateDown(false); }, false);
+  canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);   e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
   anim();
@@ -825,14 +828,6 @@ function updateFPS()
         setSteps(Math.ceil(nsteps*2));
     }
   }
-}
-
-function getMousePos(event) {
-  var rect = canvas.getBoundingClientRect();
-  return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top
-  };
 }
 
 var useRead = false;
