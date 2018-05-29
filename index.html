@@ -99,6 +99,7 @@ uniform sampler2D uRand;
 uniform sampler2D uPsi;
 varying vec2 vCoord;
 
+uniform vec2 LX;
 uniform vec2 DX;
 
 // uniform float T;
@@ -110,10 +111,11 @@ uniform float F;
 uniform float den; // 1/(1.+.5*_gamma*dt)
 uniform float num; //    1.-.5*_gamma*dt
 
-uniform bool mouseIsDown;
-uniform vec2 mousePos;
+uniform bool  mouseIsDown;
+uniform vec2  mousePos;
+uniform float forceR;
 
-//const float pi = 3.14159265358979324;
+// const float pi = 3.14159265358979324;
 
 float sq(float x) { return x*x; }
 
@@ -141,10 +143,10 @@ void main()
   
   vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi
   if ( mouseIsDown ) {
-    float R2    = sq(200.);
-    vec2  dist  = mod(X/DX - mousePos + .5/DX, 1./DX) - .5/DX;
+    float R2    = sq(forceR);
+    vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
-    if ( dist2 < R2 ) { // TODO use sin distance
+    if ( dist2 < R2 ) {
       float r2     = dist2/R2;
       float r      = sqrt(r2);
       vec2 dir     = normalize(dist);
@@ -152,7 +154,7 @@ void main()
       vec2 dPsi    = vec2( det2(dir, psi1234.xz),
                            det2(dir, psi1234.yw) )*r;
       F0+= -F*sq(1.-r) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
-      //F0+= normalize(dist) * sq(1. - sq(dist2/R2));
+      //F0+= normalize(dist) * sq(1. - sq(r2));
     }
   }
   if ( xi0 > 0. )
@@ -394,6 +396,8 @@ function updateWindowSize()
   gl.uniform1f(gl.getUniformLocation(progs.rand, "Lx"), Lx);
   gl.useProgram(progs.comp);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "DX"), 1/Lx, 1/Ly);
+  gl.uniform2f(gl.getUniformLocation(progs.comp, "LX"), Lx, Ly);
+  gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), Lx/4);
   gl.useProgram(null);
   
   // thermal randomness:
@@ -867,7 +871,7 @@ function check_randTexs()
     alert(tex[i]);
 }
 
-// var defaultL = urlParam("L", Math.max(128, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
+// var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(window.innerWidth - 300, window.innerHeight - 125))/Math.log(2)))) );
 var defaultL = urlParam("L", Math.max(256, Math.pow(2,Math.floor(Math.log(Math.min(screen.width - 300, screen.height - 125))/Math.log(2)))) );
 var showAlerts = true;
 
