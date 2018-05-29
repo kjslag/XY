@@ -161,8 +161,8 @@ void main()
   if ( xi0 > 0. )
     F0 += xi0 * texture2D(uRand, X).xy;
   vec2 psiNew = (2.*psi - num*psiOld + F0*dt2) * den;
-  psiNew += den*dt2*_g*(1.-dot(psi,psi))*psi;
-//   psiNew += soften(den*dt2*_g*(1.-dot(psiNew,psiNew)))*psiNew;
+//psiNew += den*dt2*_g*(1.-dot(psi,psi))*psi;
+  psiNew += soften(den*dt2*_g*(1.-dot(psiNew,psiNew)))*psiNew;
   
   gl_FragColor = vec4(psiNew, psi);
 }
