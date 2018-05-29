@@ -965,18 +965,24 @@ fps:<input size="2" id="framerate">
 </div>
 
 <div id="controlDIV">
-T:     <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
-       <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
-Ɣ:     <input type="range" id="gamma"   onchange='setParamFromSlider("gamma")' min="-4" max="2"   step="0.01" value="-1">
-       <input size="2"     id="gamma_"  onchange='setParamFromInput ("gamma")'><br> <!--coupling to bath-->
-g:     <input type="range" id="g"       onchange='setParamFromSlider("g"    )' min="-3" max="2"   step="0.01" value= "0">
-       <input size="2"     id="g_"      onchange='setParamFromInput ("g"    )'><br> <!--g |psi-1|^2-->
-F:     <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-1" max="2"   step="0.01" value= "1">
-       <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
-dt:    <input type="range" id="dt"      onchange='setParamFromSlider("dt"   )' min="-3" max="0"   step="0.01" value="-1">
-       <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"   )'><br>  <!--time step-->
-steps: <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        min= "0" max="2.5" step="0.01" value= "0">
-       <input size="2"     id="nsteps_" onchange='setStepsFromInput ()'><br> <!--# of time steps per frame-->
+stiffness: <!--g-->
+  <input type="range" id="g"       onchange='setParamFromSlider("g"    )' min="-3" max="2"   step="0.01" value= "0">
+  <input size="2"     id="g_"      onchange='setParamFromInput ("g"    )'><br> <!--g |psi-1|^2-->
+thermal coupling: <!--Ɣ-->
+  <input type="range" id="gamma"   onchange='setParamFromSlider("gamma")' min="-4" max="2"   step="0.01" value="-1">
+  <input size="2"     id="gamma_"  onchange='setParamFromInput ("gamma")'><br> <!--coupling to bath-->
+temperature:
+  <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
+  <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
+force strength: <!--F-->
+  <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-1" max="2"   step="0.01" value= "1">
+  <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
+time step:
+  <input type="range" id="dt"      onchange='setParamFromSlider("dt"   )' min="-3" max="0"   step="0.01" value="-1">
+  <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"   )'><br>  <!--time step-->
+steps/frame:
+  <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        min= "0" max="2.5" step="0.01" value= "0">
+  <input size="2"     id="nsteps_" onchange='setStepsFromInput ()'><br> <!--# of time steps per frame-->
 </div>
 </article>
 
@@ -985,6 +991,15 @@ steps: <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        m
 <div id="debugDIV" style="display: none;">
 <p id="debugText"></p>
 </div>
+
+<ul>
+  <li> stiffness: energy cost for a spin to not be a unit vector</li>
+  <li> thermal coupling: coupling strength to thermal bath at temperature T</li>
+  <li> temperature: temperature of the bath</li>
+  <li> force strength: strength of vortex attractive force when mouse clicking on the system</li>
+  <li> time step: increase to increase simulation speed at the expense of accuracy</li>
+  <li> steps/frame: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation speed if fps is already maxed out at 60fps)</li>
+</ul>
 
 <!--
 <h1> What is an electron made of? </h1>
@@ -1027,15 +1042,6 @@ For nearly a century, atoms appeared to be invisible until J. J. Thomson managed
 
 <br>
 -->
-
-<ul>
-  <li> T: temperature of the bath</li>
-  <li> Ɣ: coupling strength to thermal bath at temperature T</li>
-  <li> g: energy cost for a spin to not be a unit vector</li>
-  <li> F: strength of vortex attractive force when mouse clicking on the system</li>
-  <li> dt: time step (increase to increase simulation speed at the expense of accuracy)</li>
-  <li> steps: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation speed if fps is already maxed out at 60fps)</li>
-</ul>
 
 Simulate the <a href="https://en.wikipedia.org/wiki/Classical_XY_model">XY model</a> using webgl!
 Hold down the mouse button to apply a force that attracts vortices and repels anti-vortices!
