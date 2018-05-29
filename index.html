@@ -143,15 +143,15 @@ void main()
   
   vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi
   if ( mouseIsDown ) {
-    float R2    = sq(forceR);
     vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
-    if (4.*dist2 < LX.x*LX.x)
+    float L     = min(LX.x, LX.y);
+    if (4.*dist2 < L*L)
     {
-      float r2     = dist2/R2;
+      float r2     = dist2/(forceR*forceR);
       float r      = sqrt(r2);
       vec2 dir     = normalize(dist);
-      float decay  = exp(-4.*r) * (1. - (2.*forceR/LX.x)*r);
+      float decay  = exp(-4.*r) * (1. - (2.*forceR/L)*r);
       if (vortexForceQ)
       {
         float f = F*decay;
@@ -309,15 +309,17 @@ function updateProgramParams(param, x)
     gl.uniform1f(gl.getUniformLocation(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
     gl.uniform1f(gl.getUniformLocation(progs.comp, "num"),    1-0.5*_gamma*dt );
   }
+  
   if ( param == "g" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), getParam("g"));
-  
-  if ( param == "dt" )
+  else if ( param == "dt" )
   {
     gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
     stopPsi = true;
   }
-  else if ( param != "T" && param != "gamma" && param != "g" )
+  else if ( param == "forceR" )
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), x*Math.min(Lx,Ly));
+  else if ( param != "T" && param != "gamma" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
   
   gl.useProgram(null);
@@ -427,7 +429,6 @@ function updateWindowSize()
   gl.useProgram(progs.comp);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "DX"), 1/Lx, 1/Ly);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "LX"), Lx, Ly);
-  gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), Lx/3);
   gl.useProgram(null);
   
   // thermal randomness:
@@ -609,7 +610,7 @@ function main()
   
   // ----------------------------------------------------------------------
   
-  var params = ["T", "gamma", "g", "dt", "F"];
+  var params = ["T", "gamma", "g", "dt", "F", "forceR"];
   for (var i=0; i<params.length; ++i)
     setParamFromSlider(params[i]);
   setStepsFromSlider();
@@ -1037,22 +1038,25 @@ fps:<input size="2" id="framerate">
 
 <div id="controlDIV">
 stiffness: <!--g-->
-  <input type="range" id="g"       onchange='setParamFromSlider("g"    )' min="-3" max="2"   step="0.01" value= "0">
-  <input size="2"     id="g_"      onchange='setParamFromInput ("g"    )'><br> <!--g |psi-1|^2-->
+  <input type="range" id="g"       onchange='setParamFromSlider("g"     )' min="-3" max="2"   step="0.01" value= "0">
+  <input size="2"     id="g_"      onchange='setParamFromInput ("g"     )'><br> <!--g |psi-1|^2-->
 thermal coupling: <!--Ɣ-->
-  <input type="range" id="gamma"   onchange='setParamFromSlider("gamma")' min="-4" max="2"   step="0.01" value="-1">
-  <input size="2"     id="gamma_"  onchange='setParamFromInput ("gamma")'><br> <!--coupling to bath-->
+  <input type="range" id="gamma"   onchange='setParamFromSlider("gamma" )' min="-4" max="2"   step="0.01" value="-1">
+  <input size="2"     id="gamma_"  onchange='setParamFromInput ("gamma" )'><br> <!--coupling to bath-->
 temperature:
-  <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
-  <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
+  <input type="range" id="T"       onchange='setParamFromSlider("T"     )' min="-3" max="2"   step="0.01" value="-3">
+  <input size="2"     id="T_"      onchange='setParamFromInput ("T"     )'><br> <!--temperature-->
 <input type="button" onclick="toggleForceType()" size="1" id="forceButton">: <!--F-->
-  <input type="range" id="F"       onchange='setParamFromSlider("F"    )' min="-2" max="2"   step="0.01" value= "0">
-  <input size="2"     id="F_"      onchange='setParamFromInput ("F"    )'><br> <!--force applied when clicking on the system-->
+  <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-2" max="2"   step="0.01" value= "0">
+  <input size="2"     id="F_"      onchange='setParamFromInput ("F"     )'><br> <!--force applied when clicking on the system-->
+force radius:
+  <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-0.5">
+  <input size="2"     id="forceR_" onchange='setParamFromInput ("forceR")'><br> <!--force applied when clicking on the system-->
 time step:
-  <input type="range" id="dt"      onchange='setParamFromSlider("dt"   )' min="-3" max="0"   step="0.01" value="-1">
-  <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"   )'><br>  <!--time step-->
+  <input type="range" id="dt"      onchange='setParamFromSlider("dt"    )' min="-3" max="0"   step="0.01" value="-1">
+  <input size="2"     id="dt_"     onchange='setParamFromInput ("dt"    )'><br>  <!--time step-->
 steps/frame:
-  <input type="range" id="nsteps"  onchange='setStepsFromSlider()'        min= "0" max="2.5" step="0.01" value= "0">
+  <input type="range" id="nsteps"  onchange='setStepsFromSlider()'         min= "0" max="2.5" step="0.01" value= "0">
   <input size="2"     id="nsteps_" onchange='setStepsFromInput ()'><br> <!--# of time steps per frame-->
 </div>
 </article>
