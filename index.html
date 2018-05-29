@@ -37,6 +37,7 @@ and Giles Thomas for a webgl tutorial:
 http://learningwebgl.com/blog/?page_id=1217
 http://webglplayground.net/gallery
 
+http://webglreport.com/
 http://webglstats.com/
 http://caniuse.com/webgl
 http://www.khronos.org/webgl/wiki/Getting_a_WebGL_Implementation
@@ -98,8 +99,9 @@ uniform sampler2D uRand;
 uniform sampler2D uPsi;
 varying vec2 vCoord;
 
-uniform vec2 LX;
-uniform vec2 DX;
+uniform vec2  DX;
+uniform vec2  LX;
+uniform float L;
 
 // uniform float T;
 uniform float xi0; // sqrt(2.*_gamma*T/dt)
@@ -134,24 +136,22 @@ void main()
   vec2  X = vCoord;
   vec2 dX = vec2(DX.x,0.), dY=vec2(0.,DX.y);
   
-  vec2 psi    = texture2D(uPsi,     X       ).xy;
-  vec2 psi1   = texture2D(uPsi, mod(X+dX,1.)).xy;
-  vec2 psi2   = texture2D(uPsi, mod(X-dX,1.)).xy;
-  vec2 psi3   = texture2D(uPsi, mod(X+dY,1.)).xy;
-  vec2 psi4   = texture2D(uPsi, mod(X-dY,1.)).xy;
-  vec2 psiOld = texture2D(uPsi,     X       ).zw;
+  vec2 psi    = texture2D(uPsi, X).xy;
+  vec2 psiOld = texture2D(uPsi, X).zw;
+  vec2 psi1   = texture2D(uPsi, vec2(mod(X.x+DX.x,1.), X.y)).xy;
+  vec2 psi2   = texture2D(uPsi, vec2(mod(X.x-DX.x,1.), X.y)).xy;
+  vec2 psi3   = texture2D(uPsi, vec2(X.x, mod(X.y+DX.y,1.))).xy;
+  vec2 psi4   = texture2D(uPsi, vec2(X.x, mod(X.y-DX.y,1.))).xy;
   
   vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi;
   if ( mouseIsDown ) {
     vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
-    float L     = min(LX.x, LX.y);
     if (4.*dist2 < L*L)
     {
-      float r2     = dist2/(forceR*forceR);
-      float r      = sqrt(r2);
-      vec2 dir     = normalize(dist);
-      float decay  = exp(-4.*r) * (1. - (2.*forceR/L)*r);
+      float r     = sqrt(dist2)/forceR;
+      vec2 dir    = normalize(dist);
+      float decay = exp(-4.*r) * (1. - (2.*forceR/L)*r);
       if (vortexForceQ)
       {
         float f = F*decay;
@@ -162,7 +162,7 @@ void main()
         vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
         vec2 dPsi    = vec2( det2(dir, psi1234.xz),
                              det2(dir, psi1234.yw) )*r;
-        F0 += (-10.*F*decay) * cross2(dPsi); //  * (det2(psi, dPsi) - 1.)
+        F0 += (-10.*F*decay) * cross2(dPsi);
       }
     }
   }
@@ -430,6 +430,7 @@ function updateWindowSize()
   gl.useProgram(progs.comp);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "DX"), 1/Lx, 1/Ly);
   gl.uniform2f(gl.getUniformLocation(progs.comp, "LX"), Lx, Ly);
+  gl.uniform1f(gl.getUniformLocation(progs.comp, "L"), Math.min(Lx, Ly));
   gl.useProgram(null);
   
   // thermal randomness:
@@ -492,6 +493,17 @@ function main()
   var ext;
   try { ext = gl.getExtension("OES_texture_float"); } catch(e) {}
   if ( !ext ) reportError("Sorry, your device does not support a necessary WebGL extension: OES_texture_float");
+  
+  // phone(low,med):         min/max= 15, prec=10
+  // phone(high),intel(all): min/max=127, prec=23
+  /*
+  var shaderInfo = "";
+  var precisionTypes = [gl.LOW_FLOAT, gl.MEDIUM_FLOAT, gl.HIGH_FLOAT];
+  for (var i=0; i<3; ++i) {
+    var f = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, precisionTypes[i]);
+    shaderInfo += "min=" + f.rangeMin + ", max=" + f.rangeMax + ", precision=" + f.precision + "<br>"
+  }
+  printDebug(shaderInfo);//*/
   
   //alert(gl.getSupportedExtensions());
   
