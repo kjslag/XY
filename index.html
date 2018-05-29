@@ -100,11 +100,10 @@ varying vec2 vCoord;
 uniform vec2 DX;
 
 // TODO
-// uniform float a;
 // uniform float T;
 uniform float xi0; // sqrt(2.*_gamma*T/dt)
 // uniform float gamma;
-uniform float _g; // g*a*a
+uniform float _g;
 uniform float dt2; // dt*dt
 uniform float F;
 uniform float den; // 1/(1.+.5*_gamma*dt)
@@ -126,12 +125,9 @@ float soften(float x) { if (x > 0.) return x; else return 1./(1./x - 1.);}
 
 void main()
 { // see XY sim.nb for formulas
-  // Solve[\[Psi]''[t] == 
-  //     F[\[Psi][t]] - \[Gamma] \[Psi]'[t] /. {\[Psi][
-  //       t] -> \[Psi]1, \[Psi]'[
-  //       t] -> (\[Psi]2 - \[Psi]0)/(2 \[Delta]t), \[Psi]''[
-  //       t] -> (\[Psi]2 - 
-  //         2 \[Psi]1 + \[Psi]0)/\[Delta]t^2}, \[Psi]2] // FullSimplify
+  // Solve[\[Psi]''[t] == F[\[Psi][t]] - \[Gamma] \[Psi]'[t] /.
+  //  {\[Psi][t] -> \[Psi]1, \[Psi]'[t] -> (\[Psi]2 - \[Psi]0)/(2 \[Delta]t), \[Psi]''[t] -> (\[Psi]2 - 2 \[Psi]1 + \[Psi]0)/\[Delta]t^2},
+  //  \[Psi]2] // FullSimplify
   vec2  X = vCoord;
   vec2 dX = vec2(DX.x,0.), dY=vec2(0.,DX.y);
   
@@ -161,7 +157,6 @@ void main()
   if ( xi0 > 0. )
     F0 += xi0 * texture2D(uRand, X).xy;
   vec2 psiNew = (2.*psi - num*psiOld + F0*dt2) * den;
-//psiNew += den*dt2*_g*(1.-dot(psi,psi))*psi;
   psiNew += soften(den*dt2*_g*(1.-dot(psiNew,psiNew)))*psiNew;
   
   gl_FragColor = vec4(psiNew, psi);
@@ -242,7 +237,6 @@ function getParam(param)
   return x;
 }
 
-// allow strange inputs like negative numbers for fun
 function updateParamInput(param)
 {
   var x = param_cache[param];
@@ -275,23 +269,22 @@ function setParamFromInput(param)
 function updateProgramParams(param, x)
 {
   gl.useProgram(progs.comp);
-  var a = getParam("a");
   var dt = getParam("dt");
-  var _gamma = getParam("gamma") * a;
+  var _gamma = getParam("gamma");
   var T = getParam("T");
-  var gamma_or_a = param == "gamma" || param == "a";
-  if ( gamma_or_a || param == "T" || param == "dt" )
+  var gamma_or_dt = param == "gamma" || param == "dt";
+  if ( gamma_or_dt || param == "T" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, "xi0"), Math.sqrt(2*_gamma*T/dt));
-  if ( gamma_or_a || param == "dt" ) {
+  if ( gamma_or_dt ) {
     gl.uniform1f(gl.getUniformLocation(progs.comp, "den"), 1/(1+0.5*_gamma*dt));
     gl.uniform1f(gl.getUniformLocation(progs.comp, "num"),    1-0.5*_gamma*dt );
   }
-  if ( param == "g" || param == "a" )
-    gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), getParam("g")*a*a);
+  if ( param == "g" )
+    gl.uniform1f(gl.getUniformLocation(progs.comp, "_g"), getParam("g"));
   
   if ( param == "dt" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
-  else if ( param != "a" && param != "T" && param != "gamma" && param != "g" )
+  else if ( param != "T" && param != "gamma" && param != "g" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, param), x);
   
   gl.useProgram(null);
@@ -578,7 +571,7 @@ function main()
   
   // ----------------------------------------------------------------------
   
-  var params = ["a", "T", "gamma", "g", "dt", "F"];
+  var params = ["T", "gamma", "g", "dt", "F"];
   for (var i=0; i<params.length; ++i)
     setParamFromSlider(params[i]);
   setStepsFromSlider();
@@ -972,8 +965,6 @@ fps:<input size="2" id="framerate">
 </div>
 
 <div id="controlDIV">
-dx:    <input type="range" id="a"       onchange='setParamFromSlider("a"    )' min="-3" max="1"   step="0.01" value= "0">
-       <input size="2"     id="a_"      onchange='setParamFromInput ("a"    )'><br> <!--lattice constant, just rescales gamma and g-->
 T:     <input type="range" id="T"       onchange='setParamFromSlider("T"    )' min="-3" max="2"   step="0.01" value="-3">
        <input size="2"     id="T_"      onchange='setParamFromInput ("T"    )'><br> <!--temperature-->
 Ɣ:     <input type="range" id="gamma"   onchange='setParamFromSlider("gamma")' min="-4" max="2"   step="0.01" value="-1">
@@ -1038,7 +1029,6 @@ For nearly a century, atoms appeared to be invisible until J. J. Thomson managed
 -->
 
 <ul>
-  <li> dx: spatial discretization of the field theory (effectively just rescales Ɣ and g)</li>
   <li> T: temperature of the bath</li>
   <li> Ɣ: coupling strength to thermal bath at temperature T</li>
   <li> g: energy cost for a spin to not be a unit vector</li>
