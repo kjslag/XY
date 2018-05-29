@@ -659,7 +659,7 @@ function main()
   canvas.addEventListener("mouseup"   , function(e){                     updateDown(false); }, false);
   canvas.addEventListener("mousemove" , function(e){updatePointerPos(e);                    }, false);
   canvas.addEventListener("touchstart", function(e){                     updateDown(true ); }, false);
-  canvas.addEventListener("touchend"  , function(e){updateTouchPos(e);   updateDown(false); }, false);
+  canvas.addEventListener("touchend"  , function(e){                     updateDown(false); }, false);
   canvas.addEventListener("touchmove" , function(e){updateTouchPos(e);   e.preventDefault();}, false);
   
   setInterval(updateFPS, 500);
@@ -1044,6 +1044,7 @@ steps/frame:
   <li> time step: increase to increase simulation speed at the expense of accuracy</li>
   <li> steps/frame: number of time steps before updating the image (decrease for more frames per second (fps), or increase for faster simulation speed if fps is already maxed out at 60fps)</li>
 </ul>
+test2
 
 <!--
 <h1> What is an electron made of? </h1>
