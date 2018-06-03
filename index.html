@@ -8,6 +8,7 @@ https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
 https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
 TODO make symplectic
+TODO maybe combine progs.rand and progs.comp for speed
 TODO mediump shaders don't work on phone
 TODO better color map
 
@@ -389,7 +390,7 @@ function randGauss()
 
 //
 
-function resetTextureL(texture, tex0, n, Lx, Ly)
+function resetTexture(texture, tex0, n)
 {
   var format = [null, gl.LUMINANCE, gl.LUMINANCE_ALPHA, gl.RGB, gl.RGBA][n];
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -399,9 +400,6 @@ function resetTextureL(texture, tex0, n, Lx, Ly)
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 //   gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-function resetTexture(texture, tex0, n)
-{ resetTextureL(texture, tex0, n, Lx, Ly); }
 
 function randomPsi()
 {
@@ -782,7 +780,6 @@ function checkFBO()
   if ( status != gl.FRAMEBUFFER_COMPLETE ) {
     if      ( status == gl.INVALID_ENUM                              ) reportError("INVALID_ENUM");
     else if ( status == gl.FRAMEBUFFER_UNDEFINED                     ) reportError("FRAMEBUFFER_UNDEFINED");
-    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT         ) reportError("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT ) reportError("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER        ) reportError("FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER        ) reportError("FRAMEBUFFER_INCOMPLETE_READ_BUFFER");
@@ -791,6 +788,9 @@ function checkFBO()
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS      ) reportError("FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
     else if ( status == gl.FRAMEBUFFER_UNSUPPORTED                   ) reportError("FRAMEBUFFER_UNSUPPORTED");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT     ) reportError("FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
+    else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT         ) {
+      reportError('FRAMEBUFFER_INCOMPLETE_ATTACHMENT. Try a different device or web browser. This <a href="https://stackoverflow.com/questions/36109347/framebuffer-incomplete-attachment-only-happens-on-android-w-firefox">error</a> seems to occur on mobile devices, such as <a href="https://stackoverflow.com/questions/28827511/webgl-ios-render-to-floating-point-texture">iOS</a> and <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1258209">Firefox</a> on Android.');
+    }
     else
       reportError(status);
   }
