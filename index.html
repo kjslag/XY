@@ -7,7 +7,8 @@ r/place location:
 https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
 https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
 
-TODO make symplectic
+TODO make stability more continuous
+TODO calculate Psi for dt change
 TODO maybe combine progs.rand and progs.comp for speed
 TODO mediump shaders don't work on phone
 TODO better color map
@@ -127,8 +128,6 @@ float sq(float x) { return x*x; }
 vec2 cross2(vec2 a) { return vec2(-a.y,a.x); }
 float det2(vec2 a, vec2 b) { return a.x*b.y - a.y*b.x; }
 
-float soften(float x) { if (x >= 0.) return x; else return x/(1. - x);}
-
 void main()
 { // see XY sim.nb for formulas
   // Solve[\[Psi]''[t] == F[\[Psi][t]] - \[Gamma] \[Psi]'[t] /.
@@ -144,13 +143,13 @@ void main()
   vec2 psi3   = texture2D(uPsi, vec2(X.x, mod(X.y+DX.y,1.))).xy;
   vec2 psi4   = texture2D(uPsi, vec2(X.x, mod(X.y-DX.y,1.))).xy;
   
-  vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi;
+  vec2 F0 = psi1 + psi2 + psi3 + psi4 - 4.*psi; // + _g*(1.-dot(psi,psi))*psi
   if ( mouseIsDown ) {
     vec2  dist  = mod(X*LX - mousePos + .5*LX, LX) - .5*LX;
     float dist2 = dot(dist, dist);
     if (4.*dist2 < L*L)
     {
-      float r     = sqrt(dist2)/forceR;
+      float r     = sqrt(dist2)/max(1.,forceR);
       vec2 dir    = normalize(dist);
       float decay = exp(-4.*r) * (1. - (2.*forceR/L)*r);
       if (vortexForceQ)
@@ -169,8 +168,15 @@ void main()
   }
   if ( xi0 > 0. )
     F0 += xi0 * texture2D(uRand, X).xy;
+  
   vec2 psiNew = (2.*psi - num*psiOld + F0*dt2) * den;
-  psiNew += soften(den*dt2*_g*(1.-dot(psiNew,psiNew)))*psiNew;
+  
+  vec2  gF  = den*dt2*_g*(1.-dot(psi   ,psi   ))*psi;
+  float gF0 = den*dt2*_g*(1.-dot(psiNew,psiNew));
+  if ( gF0 > -0.5 )
+    psiNew += gF;
+  else
+    psiNew += (-1. - 0.25/gF0)*psiNew; // TODO make more continuous
   
   gl_FragColor = vec4(psiNew, psi);
 }
@@ -316,7 +322,7 @@ function updateProgramParams(param, x)
   else if ( param == "dt" )
   {
     gl.uniform1f(gl.getUniformLocation(progs.comp, "dt2"), x*x);
-    stopPsi = true;
+    stopPsi = true; // TODO calculate new Psi
   }
   else if ( param == "forceR" )
     gl.uniform1f(gl.getUniformLocation(progs.comp, "forceR"), x*Math.min(Lx,Ly));
