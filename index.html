@@ -163,7 +163,7 @@ void main()
         vec4 psi1234 = vec4(psi1-psi2, psi3-psi4);
         vec2 dPsi    = vec2( det2(dir, psi1234.xz),
                              det2(dir, psi1234.yw) )*r;
-        F0 += (-10.*F*decay) * cross2(dPsi);
+        F0 += (-100.*F*decay) * cross2(dPsi);
       }
     }
   }
@@ -875,9 +875,9 @@ function resetPsi()
   }
 })();
 
-var frames=0, totFrames=0, lastTime=performance.now(), adjustingSteps=0, refreshRate=30;
+var frames=0, totFrames=0, lastTime=performance.now(), adjustingSteps=-1, adjustingStepsMax=2, refreshRate=60;
 function adjustSteps()
-{ adjustingSteps = 0; }
+{ adjustingSteps = -2; }
 function updateFPS()
 {
   var time = performance.now();
@@ -886,26 +886,30 @@ function updateFPS()
   frames = 0;
   lastTime = time;
   
-  if ( adjustingSteps < 2 )
+  if ( adjustingSteps < adjustingStepsMax )
   {
-    refreshRate = Math.max(fps, refreshRate);
-    if ( totFrames > refreshRate ) {
-      if ( adjustingSteps==0 && fps < .66*refreshRate )
-        adjustingSteps = 1;
-      
+    refreshRate = Math.max(Math.round(fps/60)*60, refreshRate); // assume refreshRate is a multiple of 60
+    if ( totFrames > 0.75*refreshRate ) {
       if ( animateQ ) {
-        if ( adjustingSteps == 0 )
-          setSteps(Math.ceil(nsteps*4));
-        else {
-          var newN = Math.ceil(nsteps*fps/refreshRate);
-          if ( newN >= nsteps )
-            adjustingSteps = 2;
-          else
-            setSteps(newN);
+        if ( adjustingSteps == -2 ) {
+          if ( fps < .33*refreshRate ) {
+            setSteps(Math.ceil(nsteps/2));
+            return;
+          } else
+            adjustingSteps = -1;
         }
-      }
-      else
-        adjustingSteps = 2;
+        
+        if ( adjustingSteps == -1 && fps < .66*refreshRate )
+          adjustingSteps = 0;
+        
+        if ( adjustingSteps == -1 ) {
+          setSteps(4*nsteps);
+        } else {
+          adjustingSteps += 1;
+          setSteps(Math.ceil(nsteps*fps/refreshRate));
+        }
+      } else
+        adjustingSteps = adjustingStepsMax;
     }
   }
 }
@@ -1069,7 +1073,7 @@ temperature:
   <input type="range" id="T"       onchange='setParamFromSlider("T"     )' min="-3" max="2"   step="0.01" value="-3">
   <input size="2"     id="T_"      onchange='setParamFromInput ("T"     )'><br> <!--temperature-->
 <input type="button" onclick="toggleForceType()" size="1" id="forceButton">: <!--F-->
-  <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-2" max="2"   step="0.01" value= "0">
+  <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-3" max="1"   step="0.01" value="-1">
   <input size="2"     id="F_"      onchange='setParamFromInput ("F"     )'><br> <!--force applied when clicking on the system-->
 force radius:
   <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-0.5">
