@@ -795,7 +795,7 @@ function checkFBO()
     else if ( status == gl.FRAMEBUFFER_UNSUPPORTED                   ) reportError("FRAMEBUFFER_UNSUPPORTED");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT     ) reportError("FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT");
     else if ( status == gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT         ) {
-      reportError('FRAMEBUFFER_INCOMPLETE_ATTACHMENT. Try a different device or web browser. This <a href="https://stackoverflow.com/questions/36109347/framebuffer-incomplete-attachment-only-happens-on-android-w-firefox">error</a> seems to occur on mobile devices, such as <a href="https://stackoverflow.com/questions/28827511/webgl-ios-render-to-floating-point-texture">iOS</a> and <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1258209">Firefox</a> on Android.');
+      reportError('FRAMEBUFFER_INCOMPLETE_ATTACHMENT. Try a different device or web browser. This <a href="https://stackoverflow.com/questions/36109347/framebuffer-incomplete-attachment-only-happens-on-android-w-firefox">error</a> tends to occur on mobile devices, such as <a href="https://stackoverflow.com/questions/28827511/webgl-ios-render-to-floating-point-texture">iOS</a> and <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1258209">Firefox</a> on Android, which have not implemented rendering to a floating point texture.');
     }
     else
       reportError(status);
