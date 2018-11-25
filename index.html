@@ -486,6 +486,7 @@ function main()
   var ext;
   try { ext = gl.getExtension("OES_texture_float"); } catch(e) {}
   if ( !ext ) reportError("Sorry, your device does not support a necessary WebGL extension: OES_texture_float");
+  checkGL();
   
   // phone(low,med):         min/max= 15, prec=10
   // phone(high),intel(all): min/max=127, prec=23
@@ -536,12 +537,12 @@ function main()
     return prog;
   }
   
-  progs.rand    = makeProgram("rand-frag-shader");
-  progs.comp    = makeProgram("comp-frag-shader");
-  progs.stop    = makeProgram("stop-frag-shader");
-  progs.show    = makeProgram("show-frag-shader");
+  progs.rand   = makeProgram("rand-frag-shader");
+  progs.comp   = makeProgram("comp-frag-shader");
+  progs.stop   = makeProgram("stop-frag-shader");
+  progs.show   = makeProgram("show-frag-shader");
   if (useRead)
-    progs.read  = makeProgram("read-frag-shader");
+    progs.read = makeProgram("read-frag-shader");
   
   // setup textures ----------------------------------------------------------------------
   
@@ -679,6 +680,7 @@ function main()
   
   setInterval(updateFPS, 500);
   stopPsi = false;
+  checkGL();
   anim();
 }
 
@@ -768,16 +770,16 @@ function drawFrame()
 }
 
 function checkGL(str='')
-{
-  var err = gl.getError();
-  if ( err != gl.NO_ERROR ) {
-    if      ( err == gl.INVALID_ENUM                  ) reportError(str+"INVALID_ENUM");
-    else if ( err == gl.INVALID_VALUE                 ) reportError(str+"INVALID_VALUE");
-    else if ( err == gl.INVALID_OPERATION             ) reportError(str+"INVALID_OPERATION");
-    else if ( err == gl.INVALID_FRAMEBUFFER_OPERATION ) reportError(str+"INVALID_FRAMEBUFFER_OPERATION");
-    else if ( err == gl.OUT_OF_MEMORY                 ) reportError(str+"OUT_OF_MEMORY");
-    else if ( err == gl.CONTEXT_LOST_WEBGL            ) reportError(str+"CONTEXT_LOST_WEBGL");
-  }
+{ // used for debugging
+//   var err = gl.getError();
+//   if ( err != gl.NO_ERROR ) {
+//     if      ( err == gl.INVALID_VALUE                 ) reportError(str+"INVALID_VALUE");
+//     else if ( err == gl.INVALID_OPERATION             ) reportError(str+"INVALID_OPERATION");
+//     else if ( err == gl.INVALID_FRAMEBUFFER_OPERATION ) reportError(str+"INVALID_FRAMEBUFFER_OPERATION");
+//     else if ( err == gl.OUT_OF_MEMORY                 ) reportError(str+"OUT_OF_MEMORY");
+//     else if ( err == gl.CONTEXT_LOST_WEBGL            ) reportError(str+"CONTEXT_LOST_WEBGL");
+//     else if ( err == gl.INVALID_ENUM                  ) reportError(str+"INVALID_ENUM");
+//   }
 }
 
 function checkFBO()
@@ -1070,7 +1072,7 @@ other sizes:
 
 <div id="controlDIV">
 stiffness: <!--g-->
-  <input type="range" id="g"       onchange='setParamFromSlider("g"     )' min="-3" max="2"   step="0.01" value= "0">
+  <input type="range" id="g"       onchange='setParamFromSlider("g"     )' min="-3" max="2"   step="0.01" value= "0.47">
   <input size="2"     id="g_"      onchange='setParamFromInput ("g"     )'><br> <!--g |psi-1|^2-->
 thermal coupling: <!--Ɣ-->
   <input type="range" id="gamma"   onchange='setParamFromSlider("gamma" )' min="-4" max="2"   step="0.01" value="-1">
@@ -1079,10 +1081,10 @@ temperature:
   <input type="range" id="T"       onchange='setParamFromSlider("T"     )' min="-3" max="2"   step="0.01" value="-3">
   <input size="2"     id="T_"      onchange='setParamFromInput ("T"     )'><br> <!--temperature-->
 <input type="button" onclick="toggleForceType()" size="1" id="forceButton">: <!--F-->
-  <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-3" max="1"   step="0.01" value="-1">
+  <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-3" max="1"   step="0.01" value="0">
   <input size="2"     id="F_"      onchange='setParamFromInput ("F"     )'><br> <!--force applied when clicking on the system-->
 force radius:
-  <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-0.5">
+  <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-0.53">
   <input size="2"     id="forceR_" onchange='setParamFromInput ("forceR")'><br> <!--force applied when clicking on the system-->
 time step:
   <input type="range" id="dt"      onchange='setParamFromSlider("dt"    )' min="-3" max="0"   step="0.01" value="-1">
