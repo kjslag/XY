@@ -1,35 +1,13 @@
 <!DOCTYPE html>
 
 <!--
-MIT License: Copyright 2018 Kevin Slagle
-
-r/place location:
-https://www.reddit.com/place?webview=true&ox=650&oy=225#x=650&y=225
-https://www.reddit.com/r/place/comments/63842j/final_version_of_rplace/
+MIT License: Copyright 2022 Kevin Slagle
 
 TODO make stability more continuous
 TODO calculate Psi for dt change
 TODO maybe combine progs.rand and progs.comp for speed
 TODO mediump shaders don't work on phone
 TODO better color map
-
----------------------------------------
-
-TODO What is an (e)lectron made out of?
-(e) is a picute of a blue electron with a ranbow vortex around it
-questioning meme face: http://www.memes.at/faces/questioning.jpg
-
-show range of scales with ? for further dividing electron
-mention past beliefs of indivisible atom and nucleus
-
-2016 nobel prize
-https://www.nobelprize.org/nobel_prizes/physics/laureates/2016/advanced-physicsprize2016.pdf
-
-https://arxiv.org/abs/cond-mat/0407140
-Michael Levin and Xiao-Gang Wen: "We will either establish that photons and electrons are elementary particles, or we will discover that they are emergent phenomena – collective excitations of some deeper structure that we mistake for empty space."
-
-artificial electrons
-Kitaev toric code
 
 ---------------------------------------
 
@@ -1084,7 +1062,7 @@ temperature:
   <input type="range" id="F"       onchange='setParamFromSlider("F"     )' min="-3" max="1"   step="0.01" value="0">
   <input size="2"     id="F_"      onchange='setParamFromInput ("F"     )'><br> <!--force applied when clicking on the system-->
 force radius:
-  <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-0.53">
+  <input type="range" id="forceR"  onchange='setParamFromSlider("forceR")' min="-2" max="0"   step="0.01" value="-1.25">
   <input size="2"     id="forceR_" onchange='setParamFromInput ("forceR")'><br> <!--force applied when clicking on the system-->
 time step:
   <input type="range" id="dt"      onchange='setParamFromSlider("dt"    )' min="-3" max="0"   step="0.01" value="-1">
